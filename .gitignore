@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+*.vs
+*Output
+*Resources
+*x64
