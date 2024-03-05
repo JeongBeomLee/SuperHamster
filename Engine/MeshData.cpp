@@ -42,109 +42,154 @@ shared_ptr<MeshData> MeshData::LoadFromFBX(const wstring& path)
 		meshData->_meshRenders.push_back(info);
 	}
 
-	// 불러온 메쉬 데이터를 txt 파일로 저장하기 위한 경로
 	wstring savePath{ path };
 	savePath = savePath.substr(0, savePath.length() - 4) + L".meshdata";
 	meshData->Save(savePath, loader);
-	//meshData->SaveBinary(savePath, loader);
 
 	return meshData;
 }
 
 void MeshData::Load(const wstring& _strFilePath)
 {
-	wifstream in{ _strFilePath };
+	ifstream in{ _strFilePath, ios::binary };
+
+	if (!in.is_open()) {
+		throw runtime_error("File cannot be opened for reading.");
+	}
+
 	int meshCount = 0;
-	in >> meshCount;
+	in.read(reinterpret_cast<char*>(&meshCount), sizeof(meshCount)); // meshCount 읽기
 
 	for (int i = 0; i < meshCount; ++i) {
+		// Mesh 정보 읽기
 		MeshRenderInfo info = {};
+		size_t nameLength = 0;
 		shared_ptr<Mesh> mesh = make_shared<Mesh>();
 
+		in.read(reinterpret_cast<char*>(&nameLength), sizeof(nameLength)); // 이름 길이 읽기
 		wstring meshName;
-		in >> meshName;
+		meshName.resize(nameLength);
+		in.read(reinterpret_cast<char*>(meshName.data()), nameLength * sizeof(wchar_t)); // 이름 읽기
 		mesh->SetName(meshName);
 
+		// Vertex 정보 읽기
 		int vertexCount = 0;
-		in >> vertexCount;
+		in.read(reinterpret_cast<char*>(&vertexCount), sizeof(vertexCount));
 		vector<Vertex> vertices;
-		for (int j = 0; j < vertexCount; ++j) {
-			Vertex vertex = {};
-			in	>> vertex.pos.x		>> vertex.pos.y		>> vertex.pos.z
-				>> vertex.uv.x		>> vertex.uv.y
-				>> vertex.normal.x	>> vertex.normal.y	>> vertex.normal.z
-				>> vertex.tangent.x >> vertex.tangent.y >> vertex.tangent.z
-				>> vertex.weights.x >> vertex.weights.y >> vertex.weights.z >> vertex.weights.w
-				>> vertex.indices.x >> vertex.indices.y >> vertex.indices.z >> vertex.indices.w;
-			vertices.push_back(vertex);
-		}
+		vertices.resize(vertexCount);
+		in.read(reinterpret_cast<char*>(vertices.data()), vertexCount * sizeof(Vertex));
 
-		vector<vector<uint32>> indices;
+		// Index 정보 읽기
 		int indexCount = 0;
-		in >> indexCount;
+		in.read(reinterpret_cast<char*>(&indexCount), sizeof(indexCount));
+		vector<vector<uint32_t>> indices;
+		indices.resize(indexCount);
 		for (int j = 0; j < indexCount; ++j) {
-			vector<uint32> index;
 			int indexSize = 0;
-			in >> indexSize;
-			for (int k = 0; k < indexSize; ++k) {
-				uint32 idx = 0;
-				in >> idx;
-
-				index.push_back(idx);
-			}
-
-			indices.push_back(index);
+			in.read(reinterpret_cast<char*>(&indexSize), sizeof(indexSize));
+			indices[j].resize(indexSize);
+			in.read(reinterpret_cast<char*>(indices[j].data()), indexSize * sizeof(uint32_t));
 		}
-
 		mesh->CreateFromMeshData(vertices, indices);
 
+		// Animation 정보 읽기
 		bool hasAnimation = false;
-		in >> hasAnimation;
+		in.read(reinterpret_cast<char*>(&hasAnimation), sizeof(hasAnimation));
 		if (hasAnimation) {
-			// Animation Clip 정보 기록
+			// Animation Clip 정보 읽기
 			AnimClipInfo info = {};
 			int animClipCount = 0;
-			in >> animClipCount;
-			for (int j = 0; j < animClipCount; ++j) {
-				// 이름, 길이, 프레임 수 기록
-				in >> info.animName >> info.duration >> info.frameCount;
+			in.read(reinterpret_cast<char*>(&animClipCount), sizeof(animClipCount));
 
-				// KeyFrame Count 기록
+			for (int j = 0; j < animClipCount; ++j) {
+				// 이름, 길이, 프레임 수 읽기
+				size_t nameLength = 0;
+				wstring animName;
+				double duration = 0.0;
+				int frameCount = 0;
+
+				in.read(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
+				animName.resize(nameLength);
+				in.read(reinterpret_cast<char*>(animName.data()), nameLength * sizeof(wchar_t));
+				in.read(reinterpret_cast<char*>(&duration), sizeof(duration));
+				in.read(reinterpret_cast<char*>(&frameCount), sizeof(frameCount));
+
+				info.animName = animName;
+				info.duration = duration;
+				info.frameCount = frameCount;
+
+				// KeyFrame Count 읽기
 				int keyFrameCount = 0;
-				in >> keyFrameCount;
+				in.read(reinterpret_cast<char*>(&keyFrameCount), sizeof(keyFrameCount));
 				info.keyFrames.resize(keyFrameCount);
 
-				// bone 정보 기록
+				// bone 정보 읽기
 				int boneCount = 0;
-				in >> boneCount;
+				in.read(reinterpret_cast<char*>(&boneCount), sizeof(boneCount));
 				for (int b = 0; b < boneCount; ++b) {
 					vector<KeyFrameInfo>& keyFrames = info.keyFrames[b];
 					int keyFrameInfoCount = 0;
-					in >> keyFrameInfoCount;
+					in.read(reinterpret_cast<char*>(&keyFrameInfoCount), sizeof(keyFrameInfoCount));
 					keyFrames.resize(keyFrameInfoCount);
 
 					for (int f = 0; f < keyFrameInfoCount; ++f) {
 						KeyFrameInfo& keyFrame = keyFrames[f];
-						in	>> keyFrame.time		>> keyFrame.frame
-							>> keyFrame.scale.x		>> keyFrame.scale.y		>> keyFrame.scale.z
-							>> keyFrame.rotation.x	>> keyFrame.rotation.y	>> keyFrame.rotation.z >> keyFrame.rotation.w
-							>> keyFrame.translate.x >> keyFrame.translate.y >> keyFrame.translate.z;
+						FbxDouble sx, sy, sz;
+						FbxDouble qx, qy, qz, qw;
+						FbxDouble tx, ty, tz;
+
+						in.read(reinterpret_cast<char*>(&keyFrame.time), sizeof(keyFrame.time));
+						in.read(reinterpret_cast<char*>(&keyFrame.frame), sizeof(keyFrame.frame));
+
+						in.read(reinterpret_cast<char*>(&sx), sizeof(sx));
+						in.read(reinterpret_cast<char*>(&sy), sizeof(sy));
+						in.read(reinterpret_cast<char*>(&sz), sizeof(sz));
+
+						in.read(reinterpret_cast<char*>(&qx), sizeof(qx));
+						in.read(reinterpret_cast<char*>(&qy), sizeof(qy));
+						in.read(reinterpret_cast<char*>(&qz), sizeof(qz));
+						in.read(reinterpret_cast<char*>(&qw), sizeof(qw));
+
+						in.read(reinterpret_cast<char*>(&tx), sizeof(tx));
+						in.read(reinterpret_cast<char*>(&ty), sizeof(ty));
+						in.read(reinterpret_cast<char*>(&tz), sizeof(tz));
+
+						keyFrame.scale.x = static_cast<float>(sx);
+						keyFrame.scale.y = static_cast<float>(sy);
+						keyFrame.scale.z = static_cast<float>(sz);
+
+						keyFrame.rotation.x = static_cast<float>(qx);
+						keyFrame.rotation.y = static_cast<float>(qy);
+						keyFrame.rotation.z = static_cast<float>(qz);
+						keyFrame.rotation.w = static_cast<float>(qw);
+
+						keyFrame.translate.x = static_cast<float>(tx);
+						keyFrame.translate.y = static_cast<float>(ty);
+						keyFrame.translate.z = static_cast<float>(tz);
 					}
 				}
 				mesh->AddAnimClip(info);
 			}
-			
-			// Bones 정보 기록
+
+			// Bones 정보 읽기
 			int boneCount = 0;
-			in >> boneCount;
+			in.read(reinterpret_cast<char*>(&boneCount), sizeof(boneCount));
 			for (int j = 0; j < boneCount; ++j) {
+				size_t nameLength = 0;
 				BoneInfo bone = {};
-				in >> bone.boneName >> bone.parentIdx;
-				for (int k = 0; k < 4; ++k) {
-					for (int l = 0; l < 4; ++l) {
-						in >> bone.matOffset.m[k][l];
+
+				in.read(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
+				bone.boneName.resize(nameLength);
+				in.read(reinterpret_cast<char*>(bone.boneName.data()), nameLength * sizeof(wchar_t));
+				in.read(reinterpret_cast<char*>(&bone.parentIdx), sizeof(bone.parentIdx));
+				for (int y = 0; y < 4; y++) {
+					for (int x = 0; x < 4; x++) {
+						double temp = 0.0;
+						in.read(reinterpret_cast<char*>(&temp), sizeof(temp));
+						bone.matOffset.m[y][x] = static_cast<float>(temp); // matOffset 기록
 					}
 				}
+
 				mesh->AddBone(bone);
 			}
 
@@ -152,7 +197,7 @@ void MeshData::Load(const wstring& _strFilePath)
 			if (mesh->IsAnimMesh()) {
 				// BoneOffet 행렬
 				vector<Matrix> offsetVec(boneCount);
-				for (size_t b = 0; b < boneCount; b++) {
+				for (size_t b = 0; b < boneCount; ++b) {
 					offsetVec[b] = mesh->GetBones()->at(b).matOffset;
 				}
 
@@ -193,45 +238,50 @@ void MeshData::Load(const wstring& _strFilePath)
 			}
 		}
 
+		// Material 정보 읽기
 		// meshdata 확장자 삭제
 		wstring resourcePath = _strFilePath.substr(0, _strFilePath.length() - 8) + L"fbm";
-
-		// Material 정보 기록
 		vector<shared_ptr<Material>> materials;
 		int materialCount = 0;
-		in >> materialCount;
+		in.read(reinterpret_cast<char*>(&materialCount), sizeof(materialCount));
 		for (int j = 0; j < materialCount; ++j) {
+			size_t nameLength = 0;
 			wstring materialName;
 			wstring diffuseTexName;
 			wstring normalTexName;
 			wstring specularTexName;
-			bool hasDiffuseTex = false;
-			bool hasNormalTex = false;
-			bool hasSpecularTex = false;
 
-			in >> materialName;
-			in >> hasDiffuseTex;
+			in.read(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
+			materialName.resize(nameLength);
+			in.read(reinterpret_cast<char*>(materialName.data()), nameLength * sizeof(wchar_t));
+
+			in.read(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
+			diffuseTexName.resize(nameLength);
+			in.read(reinterpret_cast<char*>(diffuseTexName.data()), nameLength * sizeof(wchar_t));
+
+			in.read(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
+			normalTexName.resize(nameLength);
+			in.read(reinterpret_cast<char*>(normalTexName.data()), nameLength * sizeof(wchar_t));
+
+			in.read(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
+			specularTexName.resize(nameLength);
+			in.read(reinterpret_cast<char*>(specularTexName.data()), nameLength * sizeof(wchar_t));
 
 			shared_ptr<Material> material = make_shared<Material>();
 			material->SetName(materialName);
 			material->SetShader(GET_SINGLE(Resources)->Get<Shader>(L"Deferred"));
 
-			if (hasDiffuseTex) {
-				in >> diffuseTexName;
+			if (!diffuseTexName.empty()) {
 				shared_ptr<Texture> diffuseTexture = GET_SINGLE(Resources)->Load<Texture>(diffuseTexName, resourcePath + L"\\" + diffuseTexName);
 				material->SetTexture(0, diffuseTexture);
 			}
 
-			in >> hasNormalTex;
-			if (hasNormalTex) {
-				in >> normalTexName;
+			if (!normalTexName.empty()) {
 				shared_ptr<Texture> normalTexture = GET_SINGLE(Resources)->Load<Texture>(normalTexName, resourcePath + L"\\" + normalTexName);
 				material->SetTexture(1, normalTexture);
 			}
 
-			in >> hasSpecularTex;
-			if (hasSpecularTex) {
-				in >> specularTexName;
+			if (!specularTexName.empty()) {
 				shared_ptr<Texture> specularTexture = GET_SINGLE(Resources)->Load<Texture>(specularTexName, resourcePath + L"\\" + specularTexName);
 				material->SetTexture(2, specularTexture);
 			}
@@ -246,150 +296,7 @@ void MeshData::Load(const wstring& _strFilePath)
 	}
 }
 
-void MeshData::Save(const wstring& path, FBXLoader& loader)
-{
-	wofstream out{ path };
-	int meshCount = loader.GetMeshCount();
-
-	// meshCount 기록
-	out << meshCount << " ";
-	for (int i = 0; i < meshCount; ++i) {
-		// Mesh 정보 기록
-		if (loader.GetMesh(i).name.empty()) {
-			out << path << i << " ";
-		}
-		else {
-			wstring meshName = loader.GetMesh(i).name;
-			// 이름이 공백이 있으면 안되니까 공백을 _로 바꿔준다.
-			replace(meshName.begin(), meshName.end(), L' ', L'_');
-			out << meshName << " ";
-		}
-
-		// Vertex 정보 기록
-		int vertexCount = loader.GetMesh(i).vertices.size();
-		out << vertexCount << " ";
-		for (const Vertex& vertex : loader.GetMesh(i).vertices) {
-			out << vertex.pos.x		<< " " << vertex.pos.y		<< " " << vertex.pos.z		<< " "
-				<< vertex.uv.x		<< " " << vertex.uv.y		<< " "
-				<< vertex.normal.x	<< " " << vertex.normal.y	<< " " << vertex.normal.z	<< " "
-				<< vertex.tangent.x << " " << vertex.tangent.y	<< " " << vertex.tangent.z	<< " "
-				<< vertex.weights.x << " " << vertex.weights.y	<< " " << vertex.weights.z	<< " " << vertex.weights.w << " "
-				<< vertex.indices.x << " " << vertex.indices.y	<< " " << vertex.indices.z	<< " " << vertex.indices.w << " ";
-		}
-
-		// Index 정보 기록
-		int indexCount = loader.GetMesh(i).indices.size();
-		out << indexCount << " ";
-		for (const vector<uint32>& index : loader.GetMesh(i).indices) {
-			int indexSize = static_cast<int>(index.size());
-			out << indexSize << " ";
-			for (uint32 idx : index) {
-				out << idx << " ";
-			}
-		}
-
-		// Animation 정보 기록
-		bool hasAnimation = loader.GetMesh(i).hasAnimation;
-		out << hasAnimation << " ";
-		if (hasAnimation) {
-			// Animation Clip 정보 기록
-			vector<shared_ptr<FbxAnimClipInfo>>& animClips = loader.GetAnimClip();
-			int animClipCount = static_cast<int>(animClips.size());
-			out << animClipCount << " ";
-			for (shared_ptr<FbxAnimClipInfo>& animClip : animClips) {
-				// 이름, 길이, 프레임 수 기록
-				double duration = animClip->endTime.GetSecondDouble() - animClip->startTime.GetSecondDouble();
-				int frameCount = static_cast<int>(animClip->endTime.GetFrameCount(animClip->mode)) - static_cast<int>(animClip->startTime.GetFrameCount(animClip->mode));
-				wstring animName = animClip->name;
-				replace(animName.begin(), animName.end(), L' ', L'_');
-				out << animName << " " << duration << " " << frameCount << " ";
-
-				// KeyFrame Count 기록
-				int keyFrameCount = static_cast<int>(animClip->keyFrames.size());
-				out << keyFrameCount << " ";
-
-				// bone 정보 기록
-				int boneCount = static_cast<int>(animClip->keyFrames.size());
-				out << boneCount << " ";
-				for (int b = 0; b < boneCount; ++b) {
-					vector<FbxKeyFrameInfo>& keyFrames = animClip->keyFrames[b];
-					int keyFrameInfoCount = static_cast<int>(keyFrames.size());
-					out << keyFrameInfoCount << " ";
-					for (int f = 0; f < keyFrameInfoCount; ++f) {
-						FbxKeyFrameInfo& keyFrame = keyFrames[f];
-						out << keyFrame.time << " " 
-							<< keyFrameInfoCount << " "
-							<< static_cast<float>(keyFrame.matTransform.GetS().mData[0]) << " " 
-							<< static_cast<float>(keyFrame.matTransform.GetS().mData[1]) << " " 
-							<< static_cast<float>(keyFrame.matTransform.GetS().mData[2]) << " "
-
-							<< static_cast<float>(keyFrame.matTransform.GetQ().mData[0]) << " " 
-							<< static_cast<float>(keyFrame.matTransform.GetQ().mData[1]) << " " 
-							<< static_cast<float>(keyFrame.matTransform.GetQ().mData[2]) << " " 
-							<< static_cast<float>(keyFrame.matTransform.GetQ().mData[3]) << " "
-
-							<< static_cast<float>(keyFrame.matTransform.GetT().mData[0]) << " " 
-							<< static_cast<float>(keyFrame.matTransform.GetT().mData[1]) << " " 
-							<< static_cast<float>(keyFrame.matTransform.GetT().mData[2]) << " ";
-					}
-				}
-			}
-
-			// Bones 정보 기록
-			vector<shared_ptr<FbxBoneInfo>>& bones = loader.GetBones();
-			int boneCount = static_cast<int>(bones.size());
-			out << boneCount << " ";
-			for (shared_ptr<FbxBoneInfo>& bone : bones) {
-				wstring boneName = bone->boneName;
-				replace(boneName.begin(), boneName.end(), L' ', L'_');
-				out << boneName << " " << bone->parentIndex << " ";
-				for (int i = 0; i < 4; ++i) {
-					for (int j = 0; j < 4; ++j) {
-						out << static_cast<float>(bone->matOffset.Get(i, j)) << " ";
-					}
-				}
-			}
-		}
-
-		// Material 정보 기록
-		const vector<FbxMaterialInfo>& materials = loader.GetMesh(i).materials;
-		int materialCount = static_cast<int>(materials.size());
-		out << materialCount << " ";
-		for (const FbxMaterialInfo& material : materials) {
-			wstring diffuseTexName	= fs::path(material.diffuseTexName).filename();
-			wstring normalTexName	= fs::path(material.normalTexName).filename();
-			wstring specularTexName = fs::path(material.specularTexName).filename();
-
-			wstring materialName = material.name;
-
-			replace(materialName.begin(), materialName.end(), L' ', L'_');
-			replace(diffuseTexName.begin(), diffuseTexName.end(), L' ', L'_');
-			replace(normalTexName.begin(), normalTexName.end(), L' ', L'_');
-			replace(specularTexName.begin(), specularTexName.end(), L' ', L'_');
-
-			bool hasDiffuseTex	= !diffuseTexName.empty();
-			bool hasNormalTex	= !normalTexName.empty();
-			bool hasSpecularTex = !specularTexName.empty();
-
-			if (hasDiffuseTex)
-				out << materialName << " " << "1" << " " << diffuseTexName << " ";
-			else
-				out << materialName << " " << "0" << " ";
-
-			if (hasNormalTex)
-				out << "1" << " " << normalTexName << " ";
-			else
-				out << "0" << " ";
-
-			if (hasSpecularTex)
-				out << "1" << " " << specularTexName << " ";
-			else
-				out << "0" << " ";
-		}
-	}
-}
-
-void MeshData::SaveBinary(const std::wstring& path, FBXLoader& loader) 
+void MeshData::Save(const std::wstring& path, FBXLoader& loader) 
 {
 	std::ofstream out(path, std::ios::binary); // 이진 파일로 열기
 
@@ -403,13 +310,11 @@ void MeshData::SaveBinary(const std::wstring& path, FBXLoader& loader)
 	for (int i = 0; i < meshCount; ++i) {
 		// Mesh 정보 기록
 		auto& mesh = loader.GetMesh(i);
-		std::wstring meshName = mesh.name.empty() ? L"default_mesh" : mesh.name;
-		// 공백을 '_'로 바꿈
-		std::replace(meshName.begin(), meshName.end(), L' ', L'_');
+		std::wstring meshName = mesh.name;
 
 		size_t nameLength = meshName.size();
-		out.write(reinterpret_cast<char*>(&nameLength), sizeof(nameLength)); // 이름 길이 기록
-		out.write(reinterpret_cast<char*>(meshName.data()), nameLength * sizeof(wchar_t)); // 이름 기록
+		out.write(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));				// 이름 길이 기록
+		out.write(reinterpret_cast<char*>(meshName.data()), nameLength * sizeof(wchar_t));	// 이름 기록
 
 		// Vertex 정보 기록
 		int vertexCount = static_cast<int>(mesh.vertices.size());
@@ -429,20 +334,104 @@ void MeshData::SaveBinary(const std::wstring& path, FBXLoader& loader)
 			}
 		}
 
-		// Animation 정보는 상당히 복잡하므로, 각 단계에서 필요한 정보를 정확한 크기와 함께 이진 형식으로 기록해야 합니다.
-		// 예를 들어, Animation Clip 정보, KeyFrame Count, Bone 정보 등을 적절한 형식으로 변환하여 저장해야 합니다.
-		// 이 예시는 구체적인 Animation 데이터 구조를 알지 못하기 때문에, Animation 데이터 저장 방법에 대한 구체적인 코드는 생략합니다.
+		// Animation 정보 기록
+		bool hasAnimation = mesh.hasAnimation;
+		out.write(reinterpret_cast<char*>(&hasAnimation), sizeof(hasAnimation)); // hasAnimation 기록
+
+		if (hasAnimation) {
+			// Animation Clip 정보 기록
+			const vector<shared_ptr<FbxAnimClipInfo>>& animClips = loader.GetAnimClip();
+			int animClipCount = static_cast<int>(animClips.size());
+			out.write(reinterpret_cast<char*>(&animClipCount), sizeof(animClipCount)); // animClipCount 기록
+			for (const shared_ptr<FbxAnimClipInfo>& animClip : animClips) {
+				// 이름, 길이, 프레임 수 기록
+				double duration = animClip->endTime.GetSecondDouble() - animClip->startTime.GetSecondDouble();
+				int frameCount = static_cast<int>(animClip->endTime.GetFrameCount(animClip->mode)) - static_cast<int>(animClip->startTime.GetFrameCount(animClip->mode));
+				std::wstring animName = animClip->name;
+
+				size_t nameLength = animName.size();
+				out.write(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));				// 이름 길이 기록
+				out.write(reinterpret_cast<char*>(animName.data()), nameLength * sizeof(wchar_t));	// 이름 기록
+				out.write(reinterpret_cast<char*>(&duration), sizeof(duration));					// duration 기록
+				out.write(reinterpret_cast<char*>(&frameCount), sizeof(frameCount));				// frameCount 기록
+
+				// KeyFrame Count 기록
+				int keyFrameCount = static_cast<int>(animClip->keyFrames.size());
+				out.write(reinterpret_cast<char*>(&keyFrameCount), sizeof(keyFrameCount)); // keyFrameCount 기록
+
+				// bone 정보 기록
+				int boneCount = static_cast<int>(animClip->keyFrames.size());
+				out.write(reinterpret_cast<char*>(&boneCount), sizeof(boneCount)); // boneCount 기록
+
+				for (int b = 0; b < boneCount; ++b) {
+					vector<FbxKeyFrameInfo>& keyFrames = animClip->keyFrames[b];
+					int keyFrameInfoCount = static_cast<int>(keyFrames.size());
+					out.write(reinterpret_cast<char*>(&keyFrameInfoCount), sizeof(keyFrameInfoCount)); // keyFrameInfoCount 기록
+
+					for (int f = 0; f < keyFrameInfoCount; ++f) {
+						FbxKeyFrameInfo& keyFrame = keyFrames[f];
+						out.write(reinterpret_cast<char*>(&keyFrame.time), sizeof(keyFrame.time));			// time 기록
+						out.write(reinterpret_cast<char*>(&keyFrameInfoCount), sizeof(keyFrameInfoCount));	// frame 기록
+
+						out.write(reinterpret_cast<char*>(&keyFrame.matTransform.GetS().mData[0]), sizeof(FbxDouble));	// scale 기록
+						out.write(reinterpret_cast<char*>(&keyFrame.matTransform.GetS().mData[1]), sizeof(FbxDouble));
+						out.write(reinterpret_cast<char*>(&keyFrame.matTransform.GetS().mData[2]), sizeof(FbxDouble));
+
+						out.write(reinterpret_cast<char*>(&keyFrame.matTransform.GetQ().mData[0]), sizeof(FbxDouble));	// rotation 기록
+						out.write(reinterpret_cast<char*>(&keyFrame.matTransform.GetQ().mData[1]), sizeof(FbxDouble));
+						out.write(reinterpret_cast<char*>(&keyFrame.matTransform.GetQ().mData[2]), sizeof(FbxDouble));
+						out.write(reinterpret_cast<char*>(&keyFrame.matTransform.GetQ().mData[3]), sizeof(FbxDouble));
+
+						out.write(reinterpret_cast<char*>(&keyFrame.matTransform.GetT().mData[0]), sizeof(FbxDouble));	// translate 기록
+						out.write(reinterpret_cast<char*>(&keyFrame.matTransform.GetT().mData[1]), sizeof(FbxDouble));
+						out.write(reinterpret_cast<char*>(&keyFrame.matTransform.GetT().mData[2]), sizeof(FbxDouble));
+
+					}
+				}
+			}
+
+			// Bones 정보 기록
+			const vector<shared_ptr<FbxBoneInfo>>& bones = loader.GetBones();
+			int boneCount = static_cast<int>(bones.size());
+			out.write(reinterpret_cast<char*>(&boneCount), sizeof(boneCount)); // boneCount 기록
+			for (const shared_ptr<FbxBoneInfo>& bone : bones) {
+				std::wstring boneName = bone->boneName;
+
+				size_t nameLength = boneName.size();
+				out.write(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));				// 이름 길이 기록
+				out.write(reinterpret_cast<char*>(boneName.data()), nameLength * sizeof(wchar_t));	// 이름 기록
+				out.write(reinterpret_cast<char*>(&bone->parentIndex), sizeof(bone->parentIndex));	// parentIndex 기록
+				for (int y = 0; y < 4; y++)
+					for (int x = 0; x < 4; x++)
+						out.write(reinterpret_cast<char*>(&bone->matOffset.mData[y][x]), sizeof(double)); // matOffset 기록
+			}
+		}
 
 		// Material 정보 기록
 		int materialCount = static_cast<int>(mesh.materials.size());
 		out.write(reinterpret_cast<char*>(&materialCount), sizeof(materialCount)); // materialCount 기록
 		for (const FbxMaterialInfo& material : mesh.materials) {
-			// Material 이름과 텍스처 파일 이름들을 기록하는 방식을 반복합니다.
-			// 여기서도 이름 길이와 데이터를 순서대로 기록합니다.
-		}
+			std::wstring materialName = material.name;
+			wstring diffuseTexName = fs::path(material.diffuseTexName).filename();
+			wstring normalTexName = fs::path(material.normalTexName).filename();
+			wstring specularTexName = fs::path(material.specularTexName).filename();
 
-		// 파일 작업을 완료한 후에는 파일을 닫아야 합니다. 하지만 std::ofstream 객체는 소멸자에서 자동으로 파일을 닫기 때문에
-		// 여기서 명시적으로 파일을 닫을 필요는 없습니다.
+			size_t nameLength = materialName.size();
+			out.write(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));					// 이름 길이 기록
+			out.write(reinterpret_cast<char*>(materialName.data()), nameLength * sizeof(wchar_t));	// 이름 기록
+
+			nameLength = diffuseTexName.size();
+			out.write(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
+			out.write(reinterpret_cast<char*>(diffuseTexName.data()), nameLength * sizeof(wchar_t));
+
+			nameLength = normalTexName.size();
+			out.write(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
+			out.write(reinterpret_cast<char*>(normalTexName.data()), nameLength * sizeof(wchar_t));
+
+			nameLength = specularTexName.size();
+			out.write(reinterpret_cast<char*>(&nameLength), sizeof(nameLength));
+			out.write(reinterpret_cast<char*>(specularTexName.data()), nameLength * sizeof(wchar_t));
+		}
 	}
 }
 

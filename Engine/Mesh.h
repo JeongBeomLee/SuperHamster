@@ -48,12 +48,11 @@ public:
 
 	static shared_ptr<Mesh> CreateFromFBX(const struct FbxMeshInfo* meshInfo, class FBXLoader& loader);
 	void CreateFromMeshData(const vector<Vertex>& vertexBuffer, const vector<vector<uint32>>& indexBuffer);
-	void CreateBoneOffsetBuffer(uint32 elementSize, uint32 elementCount, void* initialData = nullptr);
 
-	void AddAnimClip(const AnimClipInfo& animClips) { _animClips.push_back(animClips); }
-	void AddBone(const BoneInfo& bone) { _bones.push_back(bone); }
-	void AddBoneFrameDataBuffer(shared_ptr<StructuredBuffer>& buffer) { _frameBuffer.push_back(buffer); }
-	void SetBoneOffsetBuffer(shared_ptr<StructuredBuffer>& buffer) { _offsetBuffer = buffer; }
+	void AddAnimClip(const AnimClipInfo& animClips)						{ _animClips.push_back(animClips); }
+	void AddBone(const BoneInfo& bone)									{ _bones.push_back(bone); }
+	void AddBoneFrameDataBuffer(shared_ptr<StructuredBuffer>& buffer)	{ _frameBuffer.push_back(buffer); }
+	void SetBoneOffsetBuffer(shared_ptr<StructuredBuffer>& buffer)		{ _offsetBuffer = buffer; }
 
 private:
 	void CreateVertexBuffer(const vector<Vertex>& buffer);

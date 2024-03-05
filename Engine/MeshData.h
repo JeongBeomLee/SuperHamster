@@ -23,7 +23,6 @@ public:
 
 	virtual void Load(const wstring& path);
 	void Save(const wstring& path, FBXLoader& loader);
-	void SaveBinary(const wstring& path, FBXLoader& loader);
 
 	vector<shared_ptr<GameObject>> Instantiate();
 
