@@ -290,8 +290,8 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 #pragma region FBX
 	{
-		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Dragon.fbx");
-		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"DragonModel", L"..\\Resources\\FBX\\Dragon.meshdata");
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Alien-Animal.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"DragonModel", L"..\\Resources\\FBX\\Alien-Animal.meshdata");
 
 		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
 
@@ -299,7 +299,7 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 			gameObject->SetName(L"Dragon");
 			gameObject->SetCheckFrustum(false);
 			gameObject->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 300.f));
-			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(10.f, 10.f, 10.f));
 			gameObject->GetTransform()->SetLocalRotation(Vec3(0.f, 0.f, 0.f));
 
 			scene->AddGameObject(gameObject);
