@@ -6,11 +6,11 @@ class Device
 public:
 	void Init();
 
-	ComPtr<IDXGIFactory> GetDXGI()		{ return _dxgi; }
-	ComPtr<ID3D12Device> GetDevice()	{ return _device; }
+	ComPtr<IDXGIFactory> GetDXGI()		{ return dxgi; }
+	ComPtr<ID3D12Device> GetDevice()	{ return device; }
 
 private:
-	ComPtr<ID3D12Debug>		_debugController;
-	ComPtr<IDXGIFactory>	_dxgi;
-	ComPtr<ID3D12Device>	_device;
+	ComPtr<ID3D12Debug>		debugController;
+	ComPtr<IDXGIFactory>	dxgi;
+	ComPtr<ID3D12Device>	device;
 };

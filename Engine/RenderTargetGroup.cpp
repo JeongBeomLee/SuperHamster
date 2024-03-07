@@ -3,7 +3,6 @@
 #include "Engine.h"
 #include "Device.h"
 
-
 void RenderTargetGroup::Create(RENDER_TARGET_GROUP_TYPE groupType, vector<RenderTarget>& rtVec, shared_ptr<Texture> dsTexture)
 {
 	_groupType = groupType;

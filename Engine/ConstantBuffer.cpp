@@ -8,8 +8,7 @@ ConstantBuffer::ConstantBuffer()
 
 ConstantBuffer::~ConstantBuffer()
 {
-	if (_cbvBuffer)
-	{
+	if (_cbvBuffer) {
 		if (_cbvBuffer != nullptr)
 			_cbvBuffer->Unmap(0, nullptr);
 
@@ -52,16 +51,15 @@ void ConstantBuffer::CreateBuffer()
 void ConstantBuffer::CreateView()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC cbvDesc = {};
-	cbvDesc.NumDescriptors = _elementCount;
-	cbvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	cbvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	cbvDesc.NumDescriptors	= _elementCount;
+	cbvDesc.Flags			= D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	cbvDesc.Type			= D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	DEVICE->CreateDescriptorHeap(&cbvDesc, IID_PPV_ARGS(&_cbvHeap));
 
 	_cpuHandleBegin = _cbvHeap->GetCPUDescriptorHandleForHeapStart();
 	_handleIncrementSize = DEVICE->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	for (uint32 i = 0; i < _elementCount; ++i)
-	{
+	for (uint32 i = 0; i < _elementCount; ++i) {
 		D3D12_CPU_DESCRIPTOR_HANDLE cbvHandle = GetCpuHandle(i);
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
@@ -85,7 +83,7 @@ void ConstantBuffer::PushGraphicsData(void* buffer, uint32 size)
 	memcpy(&_mappedBuffer[_currentIndex * _elementSize], buffer, size);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = GetCpuHandle(_currentIndex);
-	GEngine->GetGraphicsDescHeap()->SetCBV(cpuHandle, _reg);
+	gEngine->GetGraphicsDescHeap()->SetCBV(cpuHandle, _reg);
 
 	_currentIndex++;
 }
@@ -105,7 +103,7 @@ void ConstantBuffer::PushComputeData(void* buffer, uint32 size)
 	memcpy(&_mappedBuffer[_currentIndex * _elementSize], buffer, size);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = GetCpuHandle(_currentIndex);
-	GEngine->GetComputeDescHeap()->SetCBV(cpuHandle, _reg);
+	gEngine->GetComputeDescHeap()->SetCBV(cpuHandle, _reg);
 
 	_currentIndex++;
 }

@@ -65,7 +65,7 @@ void Texture::Load(const wstring& path)
 		static_cast<unsigned int>(subResources.size()),
 		subResources.data());
 
-	GEngine->GetGraphicsCmdQueue()->FlushResourceCommandQueue();
+	gEngine->GetGraphicsCmdQueue()->FlushResourceCommandQueue();
 
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
 	srvHeapDesc.NumDescriptors = 1;

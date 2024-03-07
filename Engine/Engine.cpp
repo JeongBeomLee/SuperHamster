@@ -11,31 +11,35 @@
 
 void Engine::Init(const WindowInfo& info)
 {
-	_window = info;	
+	window = info;	
 
 	// 그려질 화면 크기를 설정
-	_viewport = { 0, 0, static_cast<FLOAT>(info.width), static_cast<FLOAT>(info.height), 0.0f, 1.0f };
-	_scissorRect = CD3DX12_RECT(0, 0, info.width, info.height);
+	viewport	= { 0, 0, static_cast<FLOAT>(info.width), static_cast<FLOAT>(info.height), 0.0f, 1.0f };
+	scissorRect = CD3DX12_RECT(0, 0, info.width, info.height);
 
-	_device->Init();
-	_graphicsCmdQueue->Init(_device->GetDevice(), _swapChain);
-	_computeCmdQueue->Init(_device->GetDevice());
-	_swapChain->Init(info, _device->GetDevice(), _device->GetDXGI(), _graphicsCmdQueue->GetCmdQueue());
-	_rootSignature->Init();
-	_graphicsDescHeap->Init(256);
-	_computeDescHeap->Init();
+	// 엔진 초기화
+	device			->Init();
+	graphicsCmdQueue->Init(device->GetDevice(), swapChain);
+	computeCmdQueue	->Init(device->GetDevice());
+	swapChain		->Init(info, device->GetDevice(), device->GetDXGI(), graphicsCmdQueue->GetCmdQueue());
+	rootSignature	->Init();
+	graphicsDescHeap->Init(256);
+	computeDescHeap	->Init();
 
-	CreateConstantBuffer(CBV_REGISTER::b0, sizeof(LightParams), 1);
+	// 상수 버퍼 생성
+	CreateConstantBuffer(CBV_REGISTER::b0, sizeof(LightParams),		1);
 	CreateConstantBuffer(CBV_REGISTER::b1, sizeof(TransformParams), 256);
-	CreateConstantBuffer(CBV_REGISTER::b2, sizeof(MaterialParams), 256);
+	CreateConstantBuffer(CBV_REGISTER::b2, sizeof(MaterialParams),	256);
 
+	// 렌더 타겟 그룹 생성 (multiple render target)
 	CreateRenderTargetGroups();
 
 	ResizeWindow(info.width, info.height);
 
-	GET_SINGLE(Input)->Init(info.hwnd);
-	GET_SINGLE(Timer)->Init();
-	GET_SINGLE(Resources)->Init();
+	// 엔진에 필요한 매니저 초기화
+	GET_SINGLE(Input)		->Init(info.hwnd);
+	GET_SINGLE(Timer)		->Init();
+	GET_SINGLE(Resources)	->Init();
 }
 
 void Engine::Update()
@@ -85,22 +89,22 @@ void Engine::Render()
 
 void Engine::RenderBegin()
 {
-	_graphicsCmdQueue->RenderBegin();
+	graphicsCmdQueue->RenderBegin();
 }
 
 void Engine::RenderEnd()
 {
-	_graphicsCmdQueue->RenderEnd();
+	graphicsCmdQueue->RenderEnd();
 }
 
 void Engine::ResizeWindow(int32 width, int32 height)
 {
-	_window.width = width;
-	_window.height = height;
+	window.width = width;
+	window.height = height;
 
 	RECT rect = { 0, 0, width, height };
 	::AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
-	::SetWindowPos(_window.hwnd, 0, 100, 100, width, height, 0);
+	::SetWindowPos(window.hwnd, 0, 10, 10, width, height, 0);
 }
 
 void Engine::ShowFps()
@@ -110,17 +114,17 @@ void Engine::ShowFps()
 	WCHAR text[100] = L"";
 	::wsprintf(text, L"FPS : %d", fps);
 
-	::SetWindowText(_window.hwnd, text);
+	::SetWindowText(window.hwnd, text);
 }
 
 void Engine::CreateConstantBuffer(CBV_REGISTER reg, uint32 bufferSize, uint32 count)
 {
 	uint8 typeInt = static_cast<uint8>(reg);
-	assert(_constantBuffers.size() == typeInt);
+	assert(constantBuffers.size() == typeInt);
 
 	shared_ptr<ConstantBuffer> buffer = make_shared<ConstantBuffer>();
 	buffer->Init(reg, bufferSize, count);
-	_constantBuffers.push_back(buffer);
+	constantBuffers.push_back(buffer);
 }
 
 
@@ -128,7 +132,7 @@ void Engine::CreateRenderTargetGroups()
 {
 	// DepthStencil
 	shared_ptr<Texture> dsTexture = GET_SINGLE(Resources)->CreateTexture(L"DepthStencil",
-		DXGI_FORMAT_D32_FLOAT, _window.width, _window.height,
+		DXGI_FORMAT_D32_FLOAT, window.width, window.height,
 		CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
@@ -141,12 +145,12 @@ void Engine::CreateRenderTargetGroups()
 			wstring name = L"SwapChainTarget_" + std::to_wstring(i);
 
 			ComPtr<ID3D12Resource> resource;
-			_swapChain->GetSwapChain()->GetBuffer(i, IID_PPV_ARGS(&resource));
+			swapChain->GetSwapChain()->GetBuffer(i, IID_PPV_ARGS(&resource));
 			rtVec[i].target = GET_SINGLE(Resources)->CreateTextureFromResource(name, resource);
 		}
 
-		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN)] = make_shared<RenderTargetGroup>();
-		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN)]->Create(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN, rtVec, dsTexture);
+		renderTargetGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN)] = make_shared<RenderTargetGroup>();
+		renderTargetGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN)]->Create(RENDER_TARGET_GROUP_TYPE::SWAP_CHAIN, rtVec, dsTexture);
 	}
 
 	// Shadow Group
@@ -163,8 +167,8 @@ void Engine::CreateRenderTargetGroups()
 			CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
-		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::SHADOW)] = make_shared<RenderTargetGroup>();
-		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::SHADOW)]->Create(RENDER_TARGET_GROUP_TYPE::SHADOW, rtVec, shadowDepthTexture);
+		renderTargetGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::SHADOW)] = make_shared<RenderTargetGroup>();
+		renderTargetGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::SHADOW)]->Create(RENDER_TARGET_GROUP_TYPE::SHADOW, rtVec, shadowDepthTexture);
 	}
 
 	// Deferred Group
@@ -172,22 +176,22 @@ void Engine::CreateRenderTargetGroups()
 		vector<RenderTarget> rtVec(RENDER_TARGET_G_BUFFER_GROUP_MEMBER_COUNT);
 
 		rtVec[0].target = GET_SINGLE(Resources)->CreateTexture(L"PositionTarget",
-			DXGI_FORMAT_R32G32B32A32_FLOAT, _window.width, _window.height,
+			DXGI_FORMAT_R32G32B32A32_FLOAT, window.width, window.height,
 			CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
 		rtVec[1].target = GET_SINGLE(Resources)->CreateTexture(L"NormalTarget",
-			DXGI_FORMAT_R32G32B32A32_FLOAT, _window.width, _window.height,
+			DXGI_FORMAT_R32G32B32A32_FLOAT, window.width, window.height,
 			CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
 		rtVec[2].target = GET_SINGLE(Resources)->CreateTexture(L"DiffuseTarget",
-			DXGI_FORMAT_R8G8B8A8_UNORM, _window.width, _window.height,
+			DXGI_FORMAT_R8G8B8A8_UNORM, window.width, window.height,
 			CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::G_BUFFER)] = make_shared<RenderTargetGroup>();
-		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::G_BUFFER)]->Create(RENDER_TARGET_GROUP_TYPE::G_BUFFER, rtVec, dsTexture);
+		renderTargetGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::G_BUFFER)] = make_shared<RenderTargetGroup>();
+		renderTargetGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::G_BUFFER)]->Create(RENDER_TARGET_GROUP_TYPE::G_BUFFER, rtVec, dsTexture);
 	}
 
 	// Lighting Group
@@ -195,16 +199,16 @@ void Engine::CreateRenderTargetGroups()
 		vector<RenderTarget> rtVec(RENDER_TARGET_LIGHTING_GROUP_MEMBER_COUNT);
 
 		rtVec[0].target = GET_SINGLE(Resources)->CreateTexture(L"DiffuseLightTarget",
-			DXGI_FORMAT_R8G8B8A8_UNORM, _window.width, _window.height,
+			DXGI_FORMAT_R8G8B8A8_UNORM, window.width, window.height,
 			CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
 		rtVec[1].target = GET_SINGLE(Resources)->CreateTexture(L"SpecularLightTarget",
-			DXGI_FORMAT_R8G8B8A8_UNORM, _window.width, _window.height,
+			DXGI_FORMAT_R8G8B8A8_UNORM, window.width, window.height,
 			CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
-		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::LIGHTING)] = make_shared<RenderTargetGroup>();
-		_rtGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::LIGHTING)]->Create(RENDER_TARGET_GROUP_TYPE::LIGHTING, rtVec, dsTexture);
+		renderTargetGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::LIGHTING)] = make_shared<RenderTargetGroup>();
+		renderTargetGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::LIGHTING)]->Create(RENDER_TARGET_GROUP_TYPE::LIGHTING, rtVec, dsTexture);
 	}
 }

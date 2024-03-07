@@ -10,7 +10,7 @@ void RootSignature::Init()
 
 void RootSignature::CreateGraphicsRootSignature()
 {
-	_samplerDesc = CD3DX12_STATIC_SAMPLER_DESC(0);
+	samplerDesc = CD3DX12_STATIC_SAMPLER_DESC(0);
 
 	CD3DX12_DESCRIPTOR_RANGE ranges[] =
 	{
@@ -26,13 +26,13 @@ void RootSignature::CreateGraphicsRootSignature()
 	param[0].InitAsConstantBufferView(static_cast<uint32>(CBV_REGISTER::b0)); // b0
 	param[1].InitAsDescriptorTable(_countof(ranges), ranges);	
 
-	D3D12_ROOT_SIGNATURE_DESC sigDesc = CD3DX12_ROOT_SIGNATURE_DESC(_countof(param), param, 1, &_samplerDesc);
+	D3D12_ROOT_SIGNATURE_DESC sigDesc = CD3DX12_ROOT_SIGNATURE_DESC(_countof(param), param, 1, &samplerDesc);
 	sigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT; // 입력 조립기 단계
 
 	ComPtr<ID3DBlob> blobSignature;
 	ComPtr<ID3DBlob> blobError;
 	D3D12SerializeRootSignature(&sigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &blobSignature, &blobError);
-	DEVICE->CreateRootSignature(0, blobSignature->GetBufferPointer(), blobSignature->GetBufferSize(), IID_PPV_ARGS(&_graphicsRootSignature));
+	DEVICE->CreateRootSignature(0, blobSignature->GetBufferPointer(), blobSignature->GetBufferSize(), IID_PPV_ARGS(&graphicsRootSignature));
 }
 
 void RootSignature::CreateComputeRootSignature()
@@ -53,7 +53,7 @@ void RootSignature::CreateComputeRootSignature()
 	ComPtr<ID3DBlob> blobSignature;
 	ComPtr<ID3DBlob> blobError;
 	D3D12SerializeRootSignature(&sigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &blobSignature, &blobError);
-	DEVICE->CreateRootSignature(0, blobSignature->GetBufferPointer(), blobSignature->GetBufferSize(), IID_PPV_ARGS(&_computeRootSignature));
+	DEVICE->CreateRootSignature(0, blobSignature->GetBufferPointer(), blobSignature->GetBufferSize(), IID_PPV_ARGS(&computeRootSignature));
 
-	COMPUTE_CMD_LIST->SetComputeRootSignature(_computeRootSignature.Get());
+	COMPUTE_CMD_LIST->SetComputeRootSignature(computeRootSignature.Get());
 }

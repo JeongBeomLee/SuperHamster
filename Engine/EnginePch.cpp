@@ -2,7 +2,7 @@
 #include "EnginePch.h"
 #include "Engine.h"
 
-unique_ptr<Engine> GEngine = make_unique<Engine>();
+unique_ptr<Engine> gEngine = make_unique<Engine>();
 
 wstring s2ws(const string& s)
 {

@@ -8,22 +8,22 @@
 
 void GraphicsDescriptorHeap::Init(uint32 count)
 {
-	_groupCount = count;
+	groupCount = count;
 
 	D3D12_DESCRIPTOR_HEAP_DESC desc = {};
 	desc.NumDescriptors = count * (CBV_SRV_REGISTER_COUNT - 1);
-	desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;		// shader에서 접근 가능
-	desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;			// SRV, CBV, UAV를 모두 다룰 수 있는 힙
+	desc.Flags			= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;		// shader에서 접근 가능
+	desc.Type			= D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;			// SRV, CBV, UAV를 모두 다룰 수 있는 힙
 
-	DEVICE->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_descHeap));
+	DEVICE->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descHeap));
 
-	_handleSize = DEVICE->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	_groupSize = _handleSize * (CBV_SRV_REGISTER_COUNT - 1); // b0는 전역
+	handleSize	= DEVICE->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	groupSize	= handleSize * (CBV_SRV_REGISTER_COUNT - 1); // b0는 전역
 }
 
 void GraphicsDescriptorHeap::Clear()
 {
-	_currentGroupIndex = 0;
+	currentGroupIndex = 0;
 }
 
 void GraphicsDescriptorHeap::SetCBV(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, CBV_REGISTER reg)
@@ -46,11 +46,11 @@ void GraphicsDescriptorHeap::SetSRV(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, SRV_R
 
 void GraphicsDescriptorHeap::CommitTable()
 {
-	D3D12_GPU_DESCRIPTOR_HANDLE handle = _descHeap->GetGPUDescriptorHandleForHeapStart();
-	handle.ptr += _currentGroupIndex * _groupSize;
+	D3D12_GPU_DESCRIPTOR_HANDLE handle = descHeap->GetGPUDescriptorHandleForHeapStart();
+	handle.ptr += currentGroupIndex * groupSize;
 	GRAPHICS_CMD_LIST->SetGraphicsRootDescriptorTable(1, handle);	// 1번 root parameter에 할당
 
-	_currentGroupIndex++;
+	currentGroupIndex++;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE GraphicsDescriptorHeap::GetCPUHandle(CBV_REGISTER reg)
@@ -66,9 +66,9 @@ D3D12_CPU_DESCRIPTOR_HANDLE GraphicsDescriptorHeap::GetCPUHandle(SRV_REGISTER re
 D3D12_CPU_DESCRIPTOR_HANDLE GraphicsDescriptorHeap::GetCPUHandle(uint8 reg)
 {
 	assert(reg > 0);
-	D3D12_CPU_DESCRIPTOR_HANDLE handle = _descHeap->GetCPUDescriptorHandleForHeapStart();
-	handle.ptr += _currentGroupIndex * _groupSize;
-	handle.ptr += (reg - 1) * _handleSize;
+	D3D12_CPU_DESCRIPTOR_HANDLE handle = descHeap->GetCPUDescriptorHandleForHeapStart();
+	handle.ptr += currentGroupIndex * groupSize;
+	handle.ptr += (reg - 1) * handleSize;
 	return handle;
 }
 
@@ -80,12 +80,12 @@ void ComputeDescriptorHeap::Init()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC desc = {};
 	desc.NumDescriptors = TOTAL_REGISTER_COUNT;
-	desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	desc.Flags			= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	desc.Type			= D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 
-	DEVICE->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&_descHeap));
+	DEVICE->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descHeap));
 
-	_handleSize = DEVICE->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	handleSize = DEVICE->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
 void ComputeDescriptorHeap::SetCBV(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, CBV_REGISTER reg)
@@ -119,7 +119,7 @@ void ComputeDescriptorHeap::SetUAV(D3D12_CPU_DESCRIPTOR_HANDLE srcHandle, UAV_RE
 
 void ComputeDescriptorHeap::CommitTable()
 {
-	ID3D12DescriptorHeap* descHeap = _descHeap.Get();
+	ID3D12DescriptorHeap* descHeap = descHeap.Get();
 	COMPUTE_CMD_LIST->SetDescriptorHeaps(1, &descHeap);	
 
 	D3D12_GPU_DESCRIPTOR_HANDLE handle = descHeap->GetGPUDescriptorHandleForHeapStart();
@@ -143,7 +143,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE ComputeDescriptorHeap::GetCPUHandle(UAV_REGISTER reg
 
 D3D12_CPU_DESCRIPTOR_HANDLE ComputeDescriptorHeap::GetCPUHandle(uint8 reg)
 {
-	D3D12_CPU_DESCRIPTOR_HANDLE handle = _descHeap->GetCPUDescriptorHandleForHeapStart();
-	handle.ptr += reg * _handleSize;
+	D3D12_CPU_DESCRIPTOR_HANDLE handle = descHeap->GetCPUDescriptorHandleForHeapStart();
+	handle.ptr += reg * handleSize;
 	return handle;
 }

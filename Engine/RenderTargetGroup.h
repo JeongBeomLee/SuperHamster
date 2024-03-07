@@ -21,7 +21,7 @@ enum
 struct RenderTarget
 {
 	shared_ptr<Texture> target;
-	float clearColor[4];
+	float clearColor[4] = { 0.f, 0.f, 0.f, 1.f };
 };
 
 class RenderTargetGroup

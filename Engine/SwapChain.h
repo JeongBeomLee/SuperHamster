@@ -7,14 +7,14 @@ public:
 	void Present();
 	void SwapIndex();
 
-	ComPtr<IDXGISwapChain>	GetSwapChain()			{ return _swapChain; }
-	uint8					GetBackBufferIndex()	{ return _backBufferIndex; }
+	ComPtr<IDXGISwapChain>	GetSwapChain()			{ return swapChain; }
+	uint8					GetBackBufferIndex()	{ return backBufferIndex; }
 
 private:
 	void CreateSwapChain(const WindowInfo& info, ComPtr<IDXGIFactory> dxgi, ComPtr<ID3D12CommandQueue> cmdQueue);
 
 private:
-	ComPtr<IDXGISwapChain>	_swapChain;
-	uint32					_backBufferIndex = 0;
+	ComPtr<IDXGISwapChain>	swapChain;
+	uint32					backBufferIndex = 0;
 };
 

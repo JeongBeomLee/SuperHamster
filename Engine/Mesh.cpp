@@ -25,7 +25,7 @@ void Mesh::Render(uint32 instanceCount, uint32 idx)
 	GRAPHICS_CMD_LIST->IASetVertexBuffers(0, 1, &_vertexBufferView); // Slot: (0~15)
 	GRAPHICS_CMD_LIST->IASetIndexBuffer(&_vecIndexInfo[idx].bufferView);
 
-	GEngine->GetGraphicsDescHeap()->CommitTable();
+	gEngine->GetGraphicsDescHeap()->CommitTable();
 
 	// 실제로 그린다는 의미 X, 그래픽스 명령 리스트에 명령을 추가하는 것
 	GRAPHICS_CMD_LIST->DrawIndexedInstanced(_vecIndexInfo[idx].count, instanceCount, 0, 0, 0);
@@ -37,7 +37,7 @@ void Mesh::Render(shared_ptr<InstancingBuffer>& buffer, uint32 idx)
 	GRAPHICS_CMD_LIST->IASetVertexBuffers(0, 2, bufferViews);
 	GRAPHICS_CMD_LIST->IASetIndexBuffer(&_vecIndexInfo[idx].bufferView);
 
-	GEngine->GetGraphicsDescHeap()->CommitTable();
+	gEngine->GetGraphicsDescHeap()->CommitTable();
 
 	// 실제로 그린다는 의미 X, 그래픽스 명령 리스트에 명령을 추가하는 것
 	GRAPHICS_CMD_LIST->DrawIndexedInstanced(_vecIndexInfo[idx].count, buffer->GetCount(), 0, 0, 0);

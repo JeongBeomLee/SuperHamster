@@ -49,5 +49,5 @@ void Input::Update()
 	}
 
 	::GetCursorPos(&_mousePos);
-	::ScreenToClient(GEngine->GetWindow().hwnd, &_mousePos);
+	::ScreenToClient(gEngine->GetWindow().hwnd, &_mousePos);
 }

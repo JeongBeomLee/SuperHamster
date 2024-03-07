@@ -20,23 +20,23 @@ public:
 
 	void FlushResourceCommandQueue();
 
-	ComPtr<ID3D12CommandQueue>			GetCmdQueue()			{ return _cmdQueue; }
-	ComPtr<ID3D12GraphicsCommandList>	GetGraphicsCmdList()	{ return _cmdList; }
-	ComPtr<ID3D12GraphicsCommandList>	GetResourceCmdList()	{ return _resourceCmdList; }
+	ComPtr<ID3D12CommandQueue>			GetCmdQueue()			{ return cmdQueue; }
+	ComPtr<ID3D12GraphicsCommandList>	GetGraphicsCmdList()	{ return cmdList; }
+	ComPtr<ID3D12GraphicsCommandList>	GetResourceCmdList()	{ return resourceCmdList; }
 
 private:
-	ComPtr<ID3D12CommandQueue>			_cmdQueue;
-	ComPtr<ID3D12CommandAllocator>		_cmdAlloc;
-	ComPtr<ID3D12GraphicsCommandList>	_cmdList;
+	ComPtr<ID3D12CommandQueue>			cmdQueue;
+	ComPtr<ID3D12CommandAllocator>		cmdAlloc;
+	ComPtr<ID3D12GraphicsCommandList>	cmdList;
 
-	ComPtr<ID3D12CommandAllocator>		_resourceCmdAlloc;
-	ComPtr<ID3D12GraphicsCommandList>	_resourceCmdList;
+	ComPtr<ID3D12CommandAllocator>		resourceCmdAlloc;
+	ComPtr<ID3D12GraphicsCommandList>	resourceCmdList;
 
-	ComPtr<ID3D12Fence>					_fence;
-	uint32								_fenceValue = 0;
-	HANDLE								_fenceEvent = INVALID_HANDLE_VALUE;
+	ComPtr<ID3D12Fence>					fence;
+	uint32								fenceValue = 0;
+	HANDLE								fenceEvent = INVALID_HANDLE_VALUE;
 
-	shared_ptr<SwapChain>				_swapChain;
+	shared_ptr<SwapChain>				swapChain;
 };
 
 /////////////////////////
@@ -52,15 +52,15 @@ public:
 	void WaitSync();
 	void FlushComputeCommandQueue();
 
-	ComPtr<ID3D12CommandQueue>			GetCmdQueue()		{ return _cmdQueue; }
-	ComPtr<ID3D12GraphicsCommandList>	GetComputeCmdList() { return _cmdList; }
+	ComPtr<ID3D12CommandQueue>			GetCmdQueue()		{ return cmdQueue; }
+	ComPtr<ID3D12GraphicsCommandList>	GetComputeCmdList() { return cmdList; }
 
 private:
-	ComPtr<ID3D12CommandQueue>			_cmdQueue;
-	ComPtr<ID3D12CommandAllocator>		_cmdAlloc;
-	ComPtr<ID3D12GraphicsCommandList>	_cmdList;
+	ComPtr<ID3D12CommandQueue>			cmdQueue;
+	ComPtr<ID3D12CommandAllocator>		cmdAlloc;
+	ComPtr<ID3D12GraphicsCommandList>	cmdList;
 
-	ComPtr<ID3D12Fence>					_fence;
-	uint32								_fenceValue = 0;
-	HANDLE								_fenceEvent = INVALID_HANDLE_VALUE;
+	ComPtr<ID3D12Fence>					fence;
+	uint32								fenceValue = 0;
+	HANDLE								fenceEvent = INVALID_HANDLE_VALUE;
 };
