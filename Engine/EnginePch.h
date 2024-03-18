@@ -159,18 +159,18 @@ public:								\
 
 #define GET_SINGLE(type)	type::GetInstance()
 
-#define DEVICE				GEngine->GetDevice()->GetDevice()
-#define GRAPHICS_CMD_LIST	GEngine->GetGraphicsCmdQueue()->GetGraphicsCmdList()
-#define RESOURCE_CMD_LIST	GEngine->GetGraphicsCmdQueue()->GetResourceCmdList()
-#define COMPUTE_CMD_LIST	GEngine->GetComputeCmdQueue()->GetComputeCmdList()
+#define DEVICE				gEngine->GetDevice()->GetDevice()
+#define GRAPHICS_CMD_LIST	gEngine->GetGraphicsCmdQueue()->GetGraphicsCmdList()
+#define RESOURCE_CMD_LIST	gEngine->GetGraphicsCmdQueue()->GetResourceCmdList()
+#define COMPUTE_CMD_LIST	gEngine->GetComputeCmdQueue()->GetComputeCmdList()
 
-#define GRAPHICS_ROOT_SIGNATURE		GEngine->GetRootSignature()->GetGraphicsRootSignature()
-#define COMPUTE_ROOT_SIGNATURE		GEngine->GetRootSignature()->GetComputeRootSignature()
+#define GRAPHICS_ROOT_SIGNATURE		gEngine->GetRootSignature()->GetGraphicsRootSignature()
+#define COMPUTE_ROOT_SIGNATURE		gEngine->GetRootSignature()->GetComputeRootSignature()
 
 #define INPUT				GET_SINGLE(Input)
 #define DELTA_TIME			GET_SINGLE(Timer)->GetDeltaTime()
 
-#define CONST_BUFFER(type)	GEngine->GetConstantBuffer(type)
+#define CONST_BUFFER(type)	gEngine->GetConstantBuffer(type)
 
 struct TransformParams
 {
@@ -189,7 +189,7 @@ struct AnimFrameParams
 	Vec4	translation;
 };
 
-extern unique_ptr<class Engine> GEngine;
+extern unique_ptr<class Engine> gEngine;
 
 // Utils
 wstring s2ws(const string& s);

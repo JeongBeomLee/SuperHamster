@@ -24,7 +24,7 @@ void Material::PushGraphicsData()
 			continue;
 
 		SRV_REGISTER reg = SRV_REGISTER(static_cast<int8>(SRV_REGISTER::t0) + i);
-		GEngine->GetGraphicsDescHeap()->SetSRV(_textures[i]->GetSRVHandle(), reg);
+		gEngine->GetGraphicsDescHeap()->SetSRV(_textures[i]->GetSRVHandle(), reg);
 	}
 
 	// 파이프라인 세팅
@@ -43,7 +43,7 @@ void Material::PushComputeData()
 			continue;
 
 		SRV_REGISTER reg = SRV_REGISTER(static_cast<int8>(SRV_REGISTER::t0) + i);
-		GEngine->GetComputeDescHeap()->SetSRV(_textures[i]->GetSRVHandle(), reg);
+		gEngine->GetComputeDescHeap()->SetSRV(_textures[i]->GetSRVHandle(), reg);
 	}
 
 	// 파이프라인 세팅
@@ -56,11 +56,11 @@ void Material::Dispatch(uint32 x, uint32 y, uint32 z)
 	PushComputeData();
 
 	// SetDescriptorHeaps + SetComputeRootDescriptorTable
-	GEngine->GetComputeDescHeap()->CommitTable();
+	gEngine->GetComputeDescHeap()->CommitTable();
 
 	COMPUTE_CMD_LIST->Dispatch(x, y, z);
 
-	GEngine->GetComputeCmdQueue()->FlushComputeCommandQueue();
+	gEngine->GetComputeCmdQueue()->FlushComputeCommandQueue();
 }
 
 shared_ptr<Material> Material::Clone()

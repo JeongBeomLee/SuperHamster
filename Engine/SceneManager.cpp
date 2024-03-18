@@ -20,19 +20,19 @@
 
 void SceneManager::Update()
 {
-	if (_activeScene == nullptr)
+	if (activeScene == nullptr)
 		return;
 
-	_activeScene->Update();
-	_activeScene->LateUpdate();
-	_activeScene->FinalUpdate();
+	activeScene->Update();
+	activeScene->LateUpdate();
+	activeScene->FinalUpdate();
 }
 
 // TEMP
 void SceneManager::Render()
 {
-	if (_activeScene)
-		_activeScene->Render();
+	if (activeScene)
+		activeScene->Render();
 }
 
 void SceneManager::LoadScene(wstring sceneName)
@@ -40,26 +40,26 @@ void SceneManager::LoadScene(wstring sceneName)
 	// TODO : 기존 Scene 정리
 	// TODO : 파일에서 Scene 정보 로드
 
-	_activeScene = LoadTestScene();
+	activeScene = LoadTestScene();
 
-	_activeScene->Awake();
-	_activeScene->Start();
+	activeScene->Awake();
+	activeScene->Start();
 }
 
 void SceneManager::SetLayerName(uint8 index, const wstring& name)
 {
 	// 기존 데이터 삭제
-	const wstring& prevName = _layerNames[index];
-	_layerIndex.erase(prevName);
+	const wstring& prevName = layerNames[index];
+	layerIndex.erase(prevName);
 
-	_layerNames[index] = name;
-	_layerIndex[name] = index;
+	layerNames[index] = name;
+	layerIndex[name] = index;
 }
 
 uint8 SceneManager::LayerNameToIndex(const wstring& name)
 {
-	auto findIt = _layerIndex.find(name);
-	if (findIt == _layerIndex.end())
+	auto findIt = layerIndex.find(name);
+	if (findIt == layerIndex.end())
 		return 0;
 
 	return findIt->second;
@@ -69,8 +69,8 @@ shared_ptr<GameObject> SceneManager::Pick(int32 screenX, int32 screenY)
 {
 	shared_ptr<Camera> camera = GetActiveScene()->GetMainCamera();
 
-	float width = static_cast<float>(GEngine->GetWindow().width);
-	float height = static_cast<float>(GEngine->GetWindow().height);
+	float width = static_cast<float>(gEngine->GetWindow().width);
+	float height = static_cast<float>(gEngine->GetWindow().height);
 
 	Matrix projectionMatrix = camera->GetProjectionMatrix();
 
@@ -86,8 +86,7 @@ shared_ptr<GameObject> SceneManager::Pick(int32 screenX, int32 screenY)
 	float minDistance = FLT_MAX;
 	shared_ptr<GameObject> picked;
 
-	for (auto& gameObject : gameObjects)
-	{
+	for (auto& gameObject : gameObjects) {
 		if (gameObject->GetCollider() == nullptr)
 			continue;
 
@@ -105,8 +104,7 @@ shared_ptr<GameObject> SceneManager::Pick(int32 screenX, int32 screenY)
 		if (gameObject->GetCollider()->Intersects(rayOrigin, rayDir, OUT distance) == false)
 			continue;
 
-		if (distance < minDistance)
-		{
+		if (distance < minDistance) {
 			minDistance = distance;
 			picked = gameObject;
 		}
@@ -134,7 +132,7 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		shared_ptr<Material> material = GET_SINGLE(Resources)->Get<Material>(L"ComputeShader");
 		material->SetShader(shader);
 		material->SetInt(0, 1);
-		GEngine->GetComputeDescHeap()->SetUAV(texture->GetUAVHandle(), UAV_REGISTER::u0);
+		gEngine->GetComputeDescHeap()->SetUAV(texture->GetUAVHandle(), UAV_REGISTER::u0);
 
 		// 쓰레드 그룹 (1 * 1024 * 1)
 		material->Dispatch(1, 1024, 1);
@@ -222,7 +220,7 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 #pragma endregion
 
 #pragma region Terrain
-	/*{
+	{
 		shared_ptr<GameObject> obj = make_shared<GameObject>();
 		obj->AddComponent(make_shared<Transform>());
 		obj->AddComponent(make_shared<Terrain>());
@@ -235,12 +233,11 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		obj->SetCheckFrustum(false);
 
 		scene->AddGameObject(obj);
-	}*/
+	}
 #pragma endregion
 
 #pragma region UI_Test
-	for (int32 i = 0; i < 6; i++)
-	{
+	for (int32 i = 0; i < 6; i++) {
 		shared_ptr<GameObject> obj = make_shared<GameObject>();
 		obj->SetLayerIndex(GET_SINGLE(SceneManager)->LayerNameToIndex(L"UI")); // UI
 		obj->AddComponent(make_shared<Transform>());
@@ -256,11 +253,11 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 			shared_ptr<Texture> texture;
 			if (i < 3)
-				texture = GEngine->GetRTGroup(RENDER_TARGET_GROUP_TYPE::G_BUFFER)->GetRTTexture(i);
+				texture = gEngine->GetRTGroup(RENDER_TARGET_GROUP_TYPE::G_BUFFER)->GetRTTexture(i);
 			else if (i < 5)
-				texture = GEngine->GetRTGroup(RENDER_TARGET_GROUP_TYPE::LIGHTING)->GetRTTexture(i - 3);
+				texture = gEngine->GetRTGroup(RENDER_TARGET_GROUP_TYPE::LIGHTING)->GetRTTexture(i - 3);
 			else
-				texture = GEngine->GetRTGroup(RENDER_TARGET_GROUP_TYPE::SHADOW)->GetRTTexture(0);
+				texture = gEngine->GetRTGroup(RENDER_TARGET_GROUP_TYPE::SHADOW)->GetRTTexture(0);
 
 			shared_ptr<Material> material = make_shared<Material>();
 			material->SetShader(shader);
@@ -276,7 +273,7 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	{
 		shared_ptr<GameObject> light = make_shared<GameObject>();
 		light->AddComponent(make_shared<Transform>());
-		light->GetTransform()->SetLocalPosition(Vec3(0, 1000, 500));
+		light->GetTransform()->SetLocalPosition(Vec3(0, 1000, 0));
 		light->AddComponent(make_shared<Light>());
 		light->GetLight()->SetLightDirection(Vec3(0, -1, 1.f));
 		light->GetLight()->SetLightType(LIGHT_TYPE::DIRECTIONAL_LIGHT);
@@ -290,17 +287,20 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 #pragma region FBX
 	{
-		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Alien-Animal.fbx");
-		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"DragonModel", L"..\\Resources\\FBX\\Alien-Animal.meshdata");
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\\Hamster.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"DragonModel", L"..\\Resources\\FBX\\Hamster.meshdata");
 
 		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
 
 		for (auto& gameObject : gameObjects) {
 			gameObject->SetName(L"Dragon");
 			gameObject->SetCheckFrustum(false);
-			gameObject->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 300.f));
-			gameObject->GetTransform()->SetLocalScale(Vec3(10.f, 10.f, 10.f));
-			gameObject->GetTransform()->SetLocalRotation(Vec3(0.f, 0.f, 0.f));
+			gameObject->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 500.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(100.f, 100.f, 100.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 0.f, 0.f));
+			/*gameObject->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 300.f)); 
+			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(0.f, 0.f, 0.f));*/
 
 			scene->AddGameObject(gameObject);
 			gameObject->AddComponent(make_shared<TestDragon>());
@@ -308,5 +308,5 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	}
 #pragma endregion
 
-	return scene;
+	return scene;	
 }

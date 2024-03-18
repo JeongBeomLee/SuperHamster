@@ -21,6 +21,10 @@ void Texture::Load(const wstring& path)
 		::LoadFromDDSFile(path.c_str(), DDS_FLAGS_NONE, nullptr, _image);
 	else if (ext == L".tga" || ext == L".TGA")
 		::LoadFromTGAFile(path.c_str(), nullptr, _image);
+	else if (ext == L".psd" || ext == L".PSD") {
+		wstring newPath = path.substr(0, path.size() - 4) + L".png";
+		::LoadFromWICFile(newPath.c_str(), WIC_FLAGS_NONE, nullptr, _image);
+	}
 	else // png, jpg, jpeg, bmp
 		::LoadFromWICFile(path.c_str(), WIC_FLAGS_NONE, nullptr, _image);
 
@@ -65,7 +69,7 @@ void Texture::Load(const wstring& path)
 		static_cast<unsigned int>(subResources.size()),
 		subResources.data());
 
-	GEngine->GetGraphicsCmdQueue()->FlushResourceCommandQueue();
+	gEngine->GetGraphicsCmdQueue()->FlushResourceCommandQueue();
 
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
 	srvHeapDesc.NumDescriptors = 1;

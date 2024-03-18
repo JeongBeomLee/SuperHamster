@@ -81,17 +81,17 @@ void StructuredBuffer::Init(uint32 elementSize, uint32 elementCount, void* initi
 
 void StructuredBuffer::PushGraphicsData(SRV_REGISTER reg)
 {
-	GEngine->GetGraphicsDescHeap()->SetSRV(_srvHeapBegin, reg);
+	gEngine->GetGraphicsDescHeap()->SetSRV(_srvHeapBegin, reg);
 }
 
 void StructuredBuffer::PushComputeSRVData(SRV_REGISTER reg)
 {
-	GEngine->GetComputeDescHeap()->SetSRV(_srvHeapBegin, reg);
+	gEngine->GetComputeDescHeap()->SetSRV(_srvHeapBegin, reg);
 }
 
 void StructuredBuffer::PushComputeUAVData(UAV_REGISTER reg)
 {
-	GEngine->GetComputeDescHeap()->SetUAV(_uavHeapBegin, reg);
+	gEngine->GetComputeDescHeap()->SetUAV(_uavHeapBegin, reg);
 }
 
 void StructuredBuffer::CopyInitialData(uint64 bufferSize, void* initialData)
@@ -131,7 +131,7 @@ void StructuredBuffer::CopyInitialData(uint64 bufferSize, void* initialData)
 		RESOURCE_CMD_LIST->ResourceBarrier(1, &barrier);
 	}
 
-	GEngine->GetGraphicsCmdQueue()->FlushResourceCommandQueue();
+	gEngine->GetGraphicsCmdQueue()->FlushResourceCommandQueue();
 
 	_resourceState = D3D12_RESOURCE_STATE_COMMON;
 }

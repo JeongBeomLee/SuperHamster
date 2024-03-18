@@ -18,17 +18,17 @@ public:
 	void Update();
 
 public:
-	const WindowInfo&					GetWindow()										{ return _window; }
-	shared_ptr<Device>					GetDevice()										{ return _device; }
-	shared_ptr<GraphicsCommandQueue>	GetGraphicsCmdQueue()							{ return _graphicsCmdQueue; }
-	shared_ptr<ComputeCommandQueue>		GetComputeCmdQueue()							{ return _computeCmdQueue; }
-	shared_ptr<SwapChain>				GetSwapChain()									{ return _swapChain; }
-	shared_ptr<RootSignature>			GetRootSignature()								{ return _rootSignature; }
-	shared_ptr<GraphicsDescriptorHeap>	GetGraphicsDescHeap()							{ return _graphicsDescHeap; }
-	shared_ptr<ComputeDescriptorHeap>	GetComputeDescHeap()							{ return _computeDescHeap; }
+	const WindowInfo&					GetWindow()										{ return window; }
+	shared_ptr<Device>					GetDevice()										{ return device; }
+	shared_ptr<GraphicsCommandQueue>	GetGraphicsCmdQueue()							{ return graphicsCommandQueue; }
+	shared_ptr<ComputeCommandQueue>		GetComputeCmdQueue()							{ return computeCommandQueue; }
+	shared_ptr<SwapChain>				GetSwapChain()									{ return swapChain; }
+	shared_ptr<RootSignature>			GetRootSignature()								{ return rootSignature; }
+	shared_ptr<GraphicsDescriptorHeap>	GetGraphicsDescHeap()							{ return graphicsDescriptorHeap; }
+	shared_ptr<ComputeDescriptorHeap>	GetComputeDescHeap()							{ return computeDescriptorHeap; }
 
-	shared_ptr<ConstantBuffer>			GetConstantBuffer(CONSTANT_BUFFER_TYPE type)	{ return _constantBuffers[static_cast<uint8>(type)]; }
-	shared_ptr<RenderTargetGroup>		GetRTGroup(RENDER_TARGET_GROUP_TYPE type)		{ return _rtGroups[static_cast<uint8>(type)]; }
+	shared_ptr<ConstantBuffer>			GetConstantBuffer(CONSTANT_BUFFER_TYPE type)	{ return constantBuffers[static_cast<uint8>(type)]; }
+	shared_ptr<RenderTargetGroup>		GetRTGroup(RENDER_TARGET_GROUP_TYPE type)		{ return renderTargetGroups[static_cast<uint8>(type)]; }
 
 public:
 	void Render();
@@ -43,20 +43,19 @@ private:
 	void CreateRenderTargetGroups();
 
 private:
-	// 그려질 화면 크기 관련
-	WindowInfo		_window;
-	D3D12_VIEWPORT	_viewport		= {};
-	D3D12_RECT		_scissorRect	= {};
+	WindowInfo		window;
+	D3D12_VIEWPORT	viewport    = {};
+	D3D12_RECT		scissorRect = {};
 
-	shared_ptr<Device>					_device				= make_shared<Device>();
-	shared_ptr<GraphicsCommandQueue>	_graphicsCmdQueue	= make_shared<GraphicsCommandQueue>();
-	shared_ptr<ComputeCommandQueue>		_computeCmdQueue	= make_shared<ComputeCommandQueue>();
-	shared_ptr<SwapChain>				_swapChain			= make_shared<SwapChain>();
-	shared_ptr<RootSignature>			_rootSignature		= make_shared<RootSignature>();
-	shared_ptr<GraphicsDescriptorHeap>	_graphicsDescHeap	= make_shared<GraphicsDescriptorHeap>();
-	shared_ptr<ComputeDescriptorHeap>	_computeDescHeap	= make_shared<ComputeDescriptorHeap>();
+	shared_ptr<Device>					device					= make_shared<Device>();
+	shared_ptr<GraphicsCommandQueue>	graphicsCommandQueue	= make_shared<GraphicsCommandQueue>();
+	shared_ptr<ComputeCommandQueue>		computeCommandQueue		= make_shared<ComputeCommandQueue>();
+	shared_ptr<SwapChain>				swapChain				= make_shared<SwapChain>();
+	shared_ptr<RootSignature>			rootSignature			= make_shared<RootSignature>();
+	shared_ptr<GraphicsDescriptorHeap>	graphicsDescriptorHeap	= make_shared<GraphicsDescriptorHeap>();
+	shared_ptr<ComputeDescriptorHeap>	computeDescriptorHeap	= make_shared<ComputeDescriptorHeap>();
 
-	vector<shared_ptr<ConstantBuffer>>	_constantBuffers;
-	array<shared_ptr<RenderTargetGroup>, RENDER_TARGET_GROUP_COUNT> _rtGroups;
+	vector<shared_ptr<ConstantBuffer>>	constantBuffers;
+	array<shared_ptr<RenderTargetGroup>, RENDER_TARGET_GROUP_COUNT> renderTargetGroups;
 };
 

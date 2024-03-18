@@ -62,6 +62,7 @@ void Shader::CreateGraphicsShader(const wstring& path, ShaderInfo info, ShaderAr
 	_graphicsPipelineDesc.NumRenderTargets = 1;
 	_graphicsPipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	_graphicsPipelineDesc.SampleDesc.Count = 1;
+	_graphicsPipelineDesc.SampleDesc.Quality = 0;
 	_graphicsPipelineDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
 	switch (info.shaderType)
