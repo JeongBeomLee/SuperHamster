@@ -12,8 +12,10 @@
 #include <array>
 #include <list>
 #include <map>
+#include <unordered_map>
 #include <thread>
 #include <fstream>
+#include <numeric>
 using namespace std;
 
 #include <filesystem>
@@ -21,6 +23,7 @@ namespace fs = std::filesystem;
 
 #include "d3dx12.h"
 #include "SimpleMath.h"
+#include "DDSTextureLoader12.h"
 #include <d3d12.h>
 #include <wrl.h>
 #include <d3dcompiler.h>
@@ -113,6 +116,7 @@ enum class UAV_REGISTER : uint8
 
 enum
 {
+	SAMPLER_COUNT = 1,
 	SWAP_CHAIN_BUFFER_COUNT = 2,
 	CBV_REGISTER_COUNT = CBV_REGISTER::END,
 	SRV_REGISTER_COUNT = static_cast<uint8>(SRV_REGISTER::END) - CBV_REGISTER_COUNT,

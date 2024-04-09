@@ -30,7 +30,7 @@ void Terrain::Init(int32 sizeX, int32 sizeZ)
 	_material->SetInt(2, _sizeZ);
 	_material->SetFloat(0, _maxTesselation);
 
-	shared_ptr<Texture> heightMap = GET_SINGLE(Resources)->Load<Texture>(L"HeightMap", L"..\\Resources\\Texture\\Terrain\\height.png");
+	shared_ptr<Texture> heightMap = GET_SINGLE(Resources)->Load<Texture>(L"HeightMap", L"..\\Resources\\Texture\\Terrain\\rock_face_03_disp_4k.png");
 	Vec2 v = Vec2(heightMap->GetWidth(), heightMap->GetHeight());
 	_material->SetVec2(0, Vec2(heightMap->GetWidth(), heightMap->GetHeight()));
 	_material->SetVec2(1, Vec2(1000.f, 5000.f));

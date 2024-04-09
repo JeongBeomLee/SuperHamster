@@ -17,7 +17,7 @@ public:
 	void CreateFromResource(ComPtr<ID3D12Resource> tex2D);
 
 public:
-	ComPtr<ID3D12Resource> GetTex2D() { return _tex2D; }
+	ComPtr<ID3D12Resource> GetTex2D() { return textureResource; }
 	ComPtr<ID3D12DescriptorHeap> GetSRV() { return _srvHeap; }
 	ComPtr<ID3D12DescriptorHeap> GetRTV() { return _rtvHeap; }
 	ComPtr<ID3D12DescriptorHeap> GetDSV() { return _dsvHeap; }
@@ -26,13 +26,13 @@ public:
 	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVHandle() { return _srvHeapBegin; }
 	D3D12_CPU_DESCRIPTOR_HANDLE GetUAVHandle() { return _uavHeapBegin; }
 
-	float GetWidth() { return static_cast<float>(_desc.Width); }
-	float GetHeight() { return static_cast<float>(_desc.Height); }
+	float GetWidth() { return static_cast<float>(textureDesc.Width); }
+	float GetHeight() { return static_cast<float>(textureDesc.Height); }
 
 private:
-	ScratchImage			 		_image;
-	D3D12_RESOURCE_DESC				_desc;
-	ComPtr<ID3D12Resource>			_tex2D;
+	ScratchImage			 		textureImage;
+	D3D12_RESOURCE_DESC				textureDesc;
+	ComPtr<ID3D12Resource>			textureResource;
 
 	ComPtr<ID3D12DescriptorHeap>	_srvHeap;
 	ComPtr<ID3D12DescriptorHeap>	_rtvHeap;

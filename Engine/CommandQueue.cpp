@@ -17,7 +17,8 @@ void GraphicsCommandQueue::Init(ComPtr<ID3D12Device> device, shared_ptr<SwapChai
 	swapChain = pSwapChain;
 
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+	ZeroMemory(&queueDesc, sizeof(D3D12_COMMAND_QUEUE_DESC));
+	queueDesc.Type	= D3D12_COMMAND_LIST_TYPE_DIRECT;
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
 	// Create Graphics Command Queue
@@ -68,8 +69,12 @@ void GraphicsCommandQueue::RenderBegin()
 
 	gEngine->GetGraphicsDescHeap()->Clear();
 
-	ID3D12DescriptorHeap* descHeap = gEngine->GetGraphicsDescHeap()->GetDescriptorHeap().Get();
-	commandList->SetDescriptorHeaps(1, &descHeap);	// 1번 Descripter Heap을 사용하겠다.
+	ID3D12DescriptorHeap* descHeap[] = { 
+		gEngine->GetGraphicsDescHeap()->GetDescriptorHeap().Get(),	// SRV, CBV, UAV
+		gEngine->GetRootSignature().get()->GetSamplerHeap().Get()	// Sampler
+	};
+
+	commandList->SetDescriptorHeaps(_countof(descHeap), descHeap);
 
 	commandList->ResourceBarrier(1, &barrier);
 }

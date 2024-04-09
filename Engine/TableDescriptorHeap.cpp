@@ -11,7 +11,7 @@ void GraphicsDescriptorHeap::Init(uint32 count)
 	_groupCount = count;
 
 	D3D12_DESCRIPTOR_HEAP_DESC desc = {};
-	desc.NumDescriptors = count * (CBV_SRV_REGISTER_COUNT - 1);
+	desc.NumDescriptors = count * (CBV_SRV_REGISTER_COUNT - 1);	// b0 제외
 	desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;		// shader에서 접근 가능
 	desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;			// SRV, CBV, UAV를 모두 다룰 수 있는 힙
 
@@ -51,6 +51,10 @@ void GraphicsDescriptorHeap::CommitTable()
 	GRAPHICS_CMD_LIST->SetGraphicsRootDescriptorTable(1, handle);	// 1번 root parameter에 할당
 
 	_currentGroupIndex++;
+
+	// 샘플러 설정
+	D3D12_GPU_DESCRIPTOR_HANDLE samplerHandle = gEngine->GetRootSignature()->GetSamplerHeap()->GetGPUDescriptorHandleForHeapStart();
+	GRAPHICS_CMD_LIST->SetGraphicsRootDescriptorTable(2, samplerHandle);
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE GraphicsDescriptorHeap::GetCPUHandle(CBV_REGISTER reg)

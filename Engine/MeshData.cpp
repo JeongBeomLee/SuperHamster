@@ -286,6 +286,8 @@ void MeshData::Load(const wstring& _strFilePath)
 				material->SetTexture(2, specularTexture);
 			}
 
+			material->SetInt(1, 1);
+
 			GET_SINGLE(Resources)->Add<Material>(material->GetName(), material);
 			materials.push_back(material);
 		}
