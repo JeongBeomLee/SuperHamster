@@ -51,16 +51,15 @@ void ConstantBuffer::CreateBuffer()
 void ConstantBuffer::CreateView()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC cbvDesc = {};
-	cbvDesc.NumDescriptors = _elementCount;
-	cbvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	cbvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	cbvDesc.NumDescriptors	= _elementCount;
+	cbvDesc.Flags			= D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	cbvDesc.Type			= D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	DEVICE->CreateDescriptorHeap(&cbvDesc, IID_PPV_ARGS(&_cbvHeap));
 
 	_cpuHandleBegin = _cbvHeap->GetCPUDescriptorHandleForHeapStart();
 	_handleIncrementSize = DEVICE->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	for (uint32 i = 0; i < _elementCount; ++i)
-	{
+	for (uint32 i = 0; i < _elementCount; ++i) {
 		D3D12_CPU_DESCRIPTOR_HANDLE cbvHandle = GetCpuHandle(i);
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
