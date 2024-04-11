@@ -111,8 +111,8 @@ private:
 
     void LoadAnimationData(FbxMesh* mesh, FbxMeshInfo* meshInfo);
     void LoadBoneWeight(FbxCluster* cluster, int32_t boneIdx, FbxMeshInfo* meshInfo);
-    void LoadOffsetMatrix(FbxCluster* cluster, const FbxAMatrix& matNodeTransform, int32_t boneIdx, FbxMeshInfo* meshInfo);
-    void LoadKeyframe(int32_t animIndex, FbxNode* node, FbxCluster* cluster, const FbxAMatrix& matNodeTransform, int32_t boneIdx, FbxMeshInfo* container);
+    void LoadOffsetMatrix(FbxCluster* cluster, const FbxAMatrix& matNodeTransform, int32_t boneIdx);
+    void LoadKeyframe(int32_t animIndex, FbxNode* node, FbxCluster* cluster, const FbxAMatrix& matNodeTransform, int32_t boneIdx);
 
     int32_t FindBoneIndex(const string& name); // Changed parameter to const reference
     FbxAMatrix GetTransform(FbxNode* node);
@@ -129,4 +129,7 @@ private:
     vector<shared_ptr<FbxBoneInfo>>     _bones;
     vector<shared_ptr<FbxAnimClipInfo>> _animClips;
     FbxArray<FbxString*>                _animNames;
+
+    // 제어 점 인덱스와 UV 좌표에 따른 고유 정점을 추적하기 위한 맵 생성.
+    std::unordered_map<int32_t, std::vector<std::pair<int32_t, FbxVector2>>> uniqueVerticesMap;
 };

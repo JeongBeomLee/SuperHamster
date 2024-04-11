@@ -29,8 +29,8 @@ void FBXLoader::LoadFbx(const wstring& path)
 	Import(path);
 
 	// Animation	
-	/*LoadBones(_scene->GetRootNode());
-	LoadAnimationInfo();*/
+	LoadBones(_scene->GetRootNode());
+	LoadAnimationInfo();
 
 	// 로드된 데이터 파싱 (Mesh/Material/Skin)
 	ParseNode(_scene->GetRootNode());
@@ -139,9 +139,6 @@ void FBXLoader::LoadMesh(FbxMesh* mesh)
 	_meshes.push_back(FbxMeshInfo());
 	FbxMeshInfo& meshInfo = _meshes.back();
 	meshInfo.name = s2ws(mesh->GetName());
-
-	// 제어 점 인덱스와 UV 좌표에 따른 고유 정점을 추적하기 위한 맵 생성.
-	std::unordered_map<int32_t, std::vector<std::pair<int32_t, FbxVector2>>> uniqueVerticesMap;
 
 	// FBX 메시에서 정점, 노말, UV 정보등을 가져온다.
 	FbxVector4* controlPoints = mesh->GetControlPoints();
@@ -627,11 +624,11 @@ void FBXLoader::LoadAnimationData(FbxMesh* mesh, FbxMeshInfo* meshInfo)
 
 					FbxAMatrix matNodeTransform = GetTransform(mesh->GetNode());
 					LoadBoneWeight(cluster, boneIdx, meshInfo);
-					LoadOffsetMatrix(cluster, matNodeTransform, boneIdx, meshInfo);
+					LoadOffsetMatrix(cluster, matNodeTransform, boneIdx);
 
 					const int32 animCount = _animNames.Size();
 					for (int32 k = 0; k < animCount; k++)
-						LoadKeyframe(k, mesh->GetNode(), cluster, matNodeTransform, boneIdx, meshInfo);
+						LoadKeyframe(k, mesh->GetNode(), cluster, matNodeTransform, boneIdx);
 				}
 			}
 		}
@@ -666,15 +663,19 @@ void FBXLoader::FillBoneWeight(FbxMesh* mesh, FbxMeshInfo* meshInfo)
 void FBXLoader::LoadBoneWeight(FbxCluster* cluster, int32_t boneIdx, FbxMeshInfo* meshInfo)
 {
 	const int32 indicesCount = cluster->GetControlPointIndicesCount();
-	for (int32 i = 0; i < indicesCount; i++)
-	{
+
+	for (int32 i = 0; i < indicesCount; i++) {
+		int32 controlPointIndex = cluster->GetControlPointIndices()[i];
 		double weight = cluster->GetControlPointWeights()[i];
-		int32 vtxIdx = cluster->GetControlPointIndices()[i];
-		meshInfo->boneWeights[vtxIdx].AddWeights(boneIdx, weight);
+
+		for (auto& vertexPair : uniqueVerticesMap[controlPointIndex]) {
+			int32 vertexIndex = vertexPair.first;
+			meshInfo->boneWeights[vertexIndex].AddWeights(boneIdx, weight);
+		}
 	}
 }
 
-void FBXLoader::LoadOffsetMatrix(FbxCluster* cluster, const FbxAMatrix& matNodeTransform, int32_t boneIdx, FbxMeshInfo* meshInfo)
+void FBXLoader::LoadOffsetMatrix(FbxCluster* cluster, const FbxAMatrix& matNodeTransform, int32_t boneIdx)
 {
 	FbxAMatrix matClusterTrans;
 	FbxAMatrix matClusterLinkTrans;
@@ -701,7 +702,7 @@ void FBXLoader::LoadOffsetMatrix(FbxCluster* cluster, const FbxAMatrix& matNodeT
 	_bones[boneIdx]->matOffset = matOffset.Transpose();
 }
 
-void FBXLoader::LoadKeyframe(int32_t animIndex, FbxNode* node, FbxCluster* cluster, const FbxAMatrix& matNodeTransform, int32_t boneIdx, FbxMeshInfo* meshInfo)
+void FBXLoader::LoadKeyframe(int32_t animIndex, FbxNode* node, FbxCluster* cluster, const FbxAMatrix& matNodeTransform, int32_t boneIdx)
 {
 	if (_animClips.empty())
 		return;
