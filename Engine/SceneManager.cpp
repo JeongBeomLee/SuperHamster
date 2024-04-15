@@ -288,8 +288,8 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 #pragma region FBX
 	{
-		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster.fbx");
-		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"DragonModel", L"..\\Resources\\FBX\\Hamster.meshdata");
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"DragonModel", L"..\\Resources\\FBX\\Hamster.meshdata");
 
 		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
 
