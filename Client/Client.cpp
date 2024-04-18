@@ -56,6 +56,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		// TODO
         game->Update();
     }
+    
+    game->Release();
 
     return (int) msg.wParam;
 }

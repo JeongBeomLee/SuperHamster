@@ -1,7 +1,7 @@
 #pragma once
 #include "MonoBehaviour.h"
 
-class TestDragon : public MonoBehaviour
+class TestAnimation : public MonoBehaviour
 {
 public:
 	virtual void Update() override;

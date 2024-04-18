@@ -16,14 +16,10 @@
 #include <thread>
 #include <fstream>
 #include <numeric>
-using namespace std;
-
 #include <filesystem>
+using namespace std;
 namespace fs = std::filesystem;
 
-#include "d3dx12.h"
-#include "SimpleMath.h"
-#include "DDSTextureLoader12.h"
 #include <d3d12.h>
 #include <wrl.h>
 #include <d3dcompiler.h>
@@ -31,14 +27,18 @@ namespace fs = std::filesystem;
 #include <DirectXMath.h>
 #include <DirectXPackedVector.h>
 #include <DirectXColors.h>
+#include <DirectXTex/DirectXTex.h>
+#include <DirectXTex/DirectXTex.inl>
+#include "d3dx12.h"
+#include "SimpleMath.h"
+#include "DDSTextureLoader12.h"
+#include "FBX/fbxsdk.h"
+#include "PxPhysicsAPI.h"
+
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 using namespace Microsoft::WRL;
-
-#include <DirectXTex/DirectXTex.h>
-#include <DirectXTex/DirectXTex.inl>
-
-#include "FBX/fbxsdk.h"
+using namespace physx;
 
 // 각종 lib
 #pragma comment(lib, "d3d12")
@@ -61,6 +61,14 @@ using namespace Microsoft::WRL;
 #pragma comment(lib, "FBX\\release\libxml2-md.lib")
 #pragma comment(lib, "FBX\\release\\zlib-md.lib")
 #endif
+
+#pragma comment(lib, "PhysX_64.lib")
+#pragma comment(lib, "PhysXCommon_64.lib")
+#pragma comment(lib, "PhysXFoundation_64.lib")
+#pragma comment(lib, "PhysXExtensions_static_64.lib")
+#pragma comment(lib, "PhysXPvdSDK_static_64.lib")
+#pragma comment(lib, "PhysXCharacterKinematic_static_64.lib")
+#pragma comment(lib, "PhysXCooking_64.lib")
 
 // 각종 typedef
 using int8		= __int8;

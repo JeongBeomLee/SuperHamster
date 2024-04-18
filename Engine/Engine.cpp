@@ -34,6 +34,9 @@ void Engine::Init(const WindowInfo& info)
 	// 렌더 타겟 그룹 생성
 	CreateRenderTargetGroups();
 
+	// 물리 엔진 초기화
+	InitPhysX();
+
 	ResizeWindow(info.width, info.height);
 
 	GET_SINGLE(Input)->Init(info.hwnd);
@@ -43,14 +46,29 @@ void Engine::Init(const WindowInfo& info)
 
 void Engine::Update()
 {
-	GET_SINGLE(Input)->Update();
 	GET_SINGLE(Timer)->Update();
+	GET_SINGLE(Input)->Update();
 	GET_SINGLE(SceneManager)->Update();
 	GET_SINGLE(InstancingManager)->ClearBuffer();
 
 	Render();
 
 	ShowFps();
+}
+
+void Engine::Release()
+{
+	pxDefaultScene->release();
+	pxCpuDispatcher->release();
+	if(pxPvd) {
+		PxPvdTransport* transport = pxPvd->getTransport();
+		pxPvd->release();
+		pxPvd = NULL;
+		PX_RELEASE(transport);
+	}
+	pxPhysics->release();
+	pxFoundation->release();
+	pxDefaultMaterial->release();
 }
 
 void Engine::Render()
@@ -207,4 +225,40 @@ void Engine::CreateRenderTargetGroups()
 		renderTargetGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::LIGHTING)] = make_shared<RenderTargetGroup>();
 		renderTargetGroups[static_cast<uint8>(RENDER_TARGET_GROUP_TYPE::LIGHTING)]->Create(RENDER_TARGET_GROUP_TYPE::LIGHTING, rtVec, dsTexture);
 	}
+}
+
+void Engine::InitPhysX()
+{
+	// PhysX Foundation 객체 생성
+	pxFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, allocator, errorCallback);
+
+	// PhysX Physics 객체 생성
+	pxPvd = PxCreatePvd(*pxFoundation);
+	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
+	pxPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
+
+	pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true, pxPvd);
+
+	// PhysX Scene 생성
+	PxSceneDesc sceneDesc(pxPhysics->getTolerancesScale());
+	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+	pxCpuDispatcher = PxDefaultCpuDispatcherCreate(2);
+	sceneDesc.cpuDispatcher = pxCpuDispatcher;
+	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+	pxDefaultScene = pxPhysics->createScene(sceneDesc);
+
+	PxPvdSceneClient* pvdClient = pxDefaultScene->getScenePvdClient();
+	if (pvdClient) {
+		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);	// 제약조건 전송
+		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);		// 접촉 전송
+		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);	// 씬 쿼리 전송
+	}
+
+	pxDefaultMaterial = pxPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+	PxRigidStatic* groundPlane = PxCreatePlane(*pxPhysics, PxPlane(0, 1, 0, 0), *pxDefaultMaterial);
+
+	pxDefaultScene->addActor(*groundPlane);
+
+	// PhysX Scene에서 충돌 정보 수신을 위한 콜백 함수 설정
+	//pxScene->setSimulationEventCallback();
 }

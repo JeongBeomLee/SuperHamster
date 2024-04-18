@@ -80,14 +80,14 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)Library/Include/FBX/;$(SolutionDir)Library/Include/;$(SolutionDir)Engine\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)Library/Lib/;$(SolutionDir)Output\;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)Library/Include/FBX/;$(SolutionDir)Library/Include/physx/;$(SolutionDir)Library/Include/;$(SolutionDir)Engine\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Library/Lib/physx/;$(SolutionDir)Library/Lib/;$(SolutionDir)Output\;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)Output\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Library/Include/FBX/;$(SolutionDir)Library/Include/;$(SolutionDir)Engine\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)Library/Lib/;$(SolutionDir)Output\;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)Library/Include/FBX/;$(SolutionDir)Library/Include/physx/;$(SolutionDir)Library/Include/;$(SolutionDir)Engine\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Library/Lib/physx/;$(SolutionDir)Library/Lib/;$(SolutionDir)Output\;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)Output\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -131,6 +131,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

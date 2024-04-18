@@ -150,7 +150,7 @@
     <ClCompile Include="Animator.cpp">
       <Filter>Object\Component</Filter>
     </ClCompile>
-    <ClCompile Include="TestDragon.cpp">
+    <ClCompile Include="TestAnimation.cpp">
       <Filter>Object\Test</Filter>
     </ClCompile>
     <ClCompile Include="CommandQueue.cpp">
@@ -176,6 +176,9 @@
     </ClCompile>
     <ClCompile Include="DDSTextureLoader12.cpp">
       <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysXComponent.cpp">
+      <Filter>Object\Component</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -281,7 +284,7 @@
     <ClInclude Include="Animator.h">
       <Filter>Object\Component</Filter>
     </ClInclude>
-    <ClInclude Include="TestDragon.h">
+    <ClInclude Include="TestAnimation.h">
       <Filter>Object\Test</Filter>
     </ClInclude>
     <ClInclude Include="CommandQueue.h">
@@ -307,6 +310,9 @@
     </ClInclude>
     <ClInclude Include="DDSTextureLoader12.h">
       <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysXComponent.h">
+      <Filter>Object\Component</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

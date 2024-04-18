@@ -13,6 +13,7 @@ class SceneManager
 
 public:
 	void Update();
+	void PhysicsUpdate();
 	void Render();
 	void LoadScene(wstring sceneName);
 

@@ -1,10 +1,10 @@
 #include "pch.h"
-#include "TestDragon.h"
+#include "TestAnimation.h"
 #include "Input.h"
 #include "Animator.h"
 #include "Transform.h"
 
-void TestDragon::Update()
+void TestAnimation::Update()
 {
 	if (INPUT->GetButtonDown(KEY_TYPE::KEY_1)) {
 		shared_ptr<Animator> animator = GetAnimator();

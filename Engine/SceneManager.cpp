@@ -16,7 +16,9 @@
 #include "Terrain.h"
 #include "SphereCollider.h"
 #include "MeshData.h"
-#include "TestDragon.h"
+#include "TestAnimation.h"
+#include "PhysXComponent.h"
+#include "Timer.h"
 
 void SceneManager::Update()
 {
@@ -25,7 +27,14 @@ void SceneManager::Update()
 
 	activeScene->Update();
 	activeScene->LateUpdate();
+	PhysicsUpdate();
 	activeScene->FinalUpdate();
+}
+
+void SceneManager::PhysicsUpdate()
+{
+	gEngine->GetDefaultScene()->simulate(DELTA_TIME);
+	gEngine->GetDefaultScene()->fetchResults(true);
 }
 
 // TEMP
@@ -222,7 +231,7 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 #pragma region Terrain
 	{
-		shared_ptr<GameObject> obj = make_shared<GameObject>();
+		/*shared_ptr<GameObject> obj = make_shared<GameObject>();
 		obj->AddComponent(make_shared<Transform>());
 		obj->AddComponent(make_shared<Terrain>());
 		obj->AddComponent(make_shared<MeshRenderer>());
@@ -233,7 +242,7 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		obj->GetTerrain()->Init(64, 64);
 		obj->SetCheckFrustum(false);
 
-		scene->AddGameObject(obj);
+		scene->AddGameObject(obj);*/
 	}
 #pragma endregion
 
@@ -286,25 +295,44 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	}
 #pragma endregion
 
-#pragma region FBX
+#pragma region Hamster
 	{
 		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster.fbx");
-		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"DragonModel", L"..\\Resources\\FBX\\Hamster.meshdata");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData", L"..\\Resources\\FBX\\Hamster.meshdata");
 
 		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
 
 		for (auto& gameObject : gameObjects) {
-			gameObject->SetName(L"Dragon");
+			gameObject->SetName(L"Hamster");
 			gameObject->SetCheckFrustum(false);
-			gameObject->GetTransform()->SetLocalPosition(Vec3(50.f, 50.f, 300.f));
-			gameObject->GetTransform()->SetLocalScale(Vec3(100.f, 100.f, 100.f));
+			gameObject->GetTransform()->SetLocalPosition(Vec3(50.f, 100.f, 300.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(10.f, 10.f, 10.f));
 			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 0.f, 0.f));
-			//gameObject->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 300.f)); 
-			//gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
-			//gameObject->GetTransform()->SetLocalRotation(Vec3(0.f, 0.f, 0.f));
+
+			// PxSphereGeometry를 사용하여 PhysX 객체 생성
+			PxPhysics* physics = gEngine->GetPhysics();
+
+			float angle = gameObject->GetTransform()->GetLocalRotation().x;
+			PxQuat quat(sin(angle / 2), 0.f, 0.f, cos(angle / 2));
+			PxTransform transform(PxVec3(50.f, 100.f, 300.f), quat);
+			PxRigidDynamic* physicsSphere = physics->createRigidDynamic(transform);
+
+			PxMaterial* defaultMaterial = gEngine->GetDefaultMaterial();
+			PxShape* shape = physics->createShape(PxSphereGeometry(0.5f), *defaultMaterial);
+			physicsSphere->attachShape(*shape);
+			physicsSphere->setMass(1.0f);
+
+			PxScene* defaultScene = gEngine->GetDefaultScene();
+			defaultScene->addActor(*physicsSphere);
+			shape->release();
+
+			// PhysXComponent 생성 및 추가
+			shared_ptr<PhysXComponent> physicsComponent = make_shared<PhysXComponent>(physicsSphere);
+			physicsComponent.get()->SetPhysicsActor(physicsSphere);
+			gameObject->AddComponent(physicsComponent);
 
 			scene->AddGameObject(gameObject);
-			gameObject->AddComponent(make_shared<TestDragon>());
+			gameObject->AddComponent(make_shared<TestAnimation>());
 		}
 	}
 #pragma endregion

@@ -11,6 +11,7 @@ enum class COMPONENT_TYPE : uint8
 	TERRAIN,
 	COLLIDER,
 	ANIMATOR,
+	PHYSX,
 	// ...
 	MONO_BEHAVIOUR,
 	END,

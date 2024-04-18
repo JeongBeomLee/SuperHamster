@@ -13,3 +13,8 @@ void Game::Update()
 {
 	gEngine->Update();
 }
+
+void Game::Release()
+{
+	gEngine->Release();
+}
