@@ -37,4 +37,12 @@ private:
 	shared_ptr<Material>			_computeMaterial;
 	shared_ptr<StructuredBuffer>	_boneFinalMatrix;  // 특정 프레임의 최종 행렬
 	bool							_boneFinalUpdated = false;
+
+	// For blending
+	int32							_prevClipIndex = 0;
+	int32							_prevFrame = 0;
+	int32							_prevNextFrame = 0;
+	float							_blendingTime = 0.2f;
+	float							_blendingUpdateTime = 0.f;
+	float							_blendingRatio = 0.f;
 };

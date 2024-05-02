@@ -6,7 +6,7 @@ class Texture;
 
 enum
 {
-	MATERIAL_ARG_COUNT = 4,
+	MATERIAL_ARG_COUNT = 5,
 };
 
 struct MaterialParams

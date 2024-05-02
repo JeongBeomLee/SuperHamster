@@ -20,8 +20,11 @@ Animator::~Animator()
 void Animator::FinalUpdate()
 {
 	_updateTime += DELTA_TIME;
+	_blendingUpdateTime += DELTA_TIME;
 
 	const AnimClipInfo& animClip = _animClips->at(_clipIndex);
+	const AnimClipInfo& prevAnimClip = _animClips->at(_prevClipIndex);
+
 	if (_updateTime >= animClip.duration)
 		_updateTime = 0.f;
 
@@ -30,6 +33,15 @@ void Animator::FinalUpdate()
 	_frame = min(_frame, animClip.frameCount - 1);
 	_nextFrame = min(_frame + 1, animClip.frameCount - 1);
 	_frameRatio = static_cast<float>(_frame - _frame);
+
+	// For blending
+	const int32 prevRatio = static_cast<int32>(prevAnimClip.frameCount / prevAnimClip.duration);
+	_prevFrame = static_cast<int32>(_updateTime * prevRatio);
+	_prevFrame = min(_prevFrame, prevAnimClip.frameCount - 1);
+	_prevNextFrame = min(_prevFrame + 1, prevAnimClip.frameCount - 1);
+
+	_blendingRatio = _blendingUpdateTime / _blendingTime;
+	_blendingRatio = min(_blendingRatio, 1.f);
 }
 
 void Animator::SetAnimClip(const vector<AnimClipInfo>* animClips)
@@ -45,15 +57,20 @@ void Animator::PushData()
 
 	// Compute Shader
 	shared_ptr<Mesh> mesh = GetGameObject()->GetMeshRenderer()->GetMesh();
+	mesh->GetBoneFrameDataBuffer(_prevClipIndex)->PushComputeSRVData(SRV_REGISTER::t7);
 	mesh->GetBoneFrameDataBuffer(_clipIndex)->PushComputeSRVData(SRV_REGISTER::t8);
 	mesh->GetBoneOffsetBuffer()->PushComputeSRVData(SRV_REGISTER::t9);
-
 	_boneFinalMatrix->PushComputeUAVData(UAV_REGISTER::u0);
 
 	_computeMaterial->SetInt(0, boneCount);
 	_computeMaterial->SetInt(1, _frame);
 	_computeMaterial->SetInt(2, _nextFrame);
 	_computeMaterial->SetFloat(0, _frameRatio);
+
+	// for blending
+	_computeMaterial->SetInt(3, _prevFrame);
+	_computeMaterial->SetInt(4, _prevNextFrame);
+	_computeMaterial->SetFloat(1, _blendingRatio);
 
 	uint32 groupCount = (boneCount / 256) + 1;
 	_computeMaterial->Dispatch(groupCount, 1, 1);
@@ -67,4 +84,8 @@ void Animator::Play(uint32 idx)
 	assert(idx < _animClips->size());
 	_clipIndex = idx;
 	_updateTime = 0.f;
+
+	// For blending
+	_blendingUpdateTime = 0.f;
+	_blendingRatio = 0.f;
 }

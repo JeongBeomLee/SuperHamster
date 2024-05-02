@@ -17,7 +17,7 @@ TestCameraScript::~TestCameraScript()
 
 void TestCameraScript::LateUpdate()
 {
-	Vec3 pos = GetTransform()->GetLocalPosition();
+	/*Vec3 pos = GetTransform()->GetLocalPosition();
 
 	if (INPUT->GetButton(KEY_TYPE::W))
 		pos += GetTransform()->GetLook() * _speed * DELTA_TIME;
@@ -37,10 +37,10 @@ void TestCameraScript::LateUpdate()
 	if (INPUT->GetButton(KEY_TYPE::LCONTROL))
 		pos.y -= _speed * DELTA_TIME;
 
-	if (INPUT->GetButton(KEY_TYPE::Q))
+	if (INPUT->GetButtonDown(KEY_TYPE::Q))
 	{
 		Vec3 rotation = GetTransform()->GetLocalRotation();
-		rotation.x += DELTA_TIME * 0.5f;
+		rotation.x += 0.1f;
 		GetTransform()->SetLocalRotation(rotation);
 	}
 
@@ -71,5 +71,5 @@ void TestCameraScript::LateUpdate()
 		GET_SINGLE(SceneManager)->Pick(pos.x, pos.y);
 	}
 
-	GetTransform()->SetLocalPosition(pos);
+	GetTransform()->SetLocalPosition(pos);*/
 }

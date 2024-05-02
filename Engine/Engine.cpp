@@ -235,6 +235,7 @@ void Engine::InitPhysX()
 	// PhysX Physics 객체 생성
 	pxPvd = PxCreatePvd(*pxFoundation);
 	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
+	//PxPvdTransport* transport = PxDefaultPvdFileTransportCreate("recording.usd");
 	pxPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 
 	pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true, pxPvd);
@@ -247,17 +248,15 @@ void Engine::InitPhysX()
 	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
 	pxDefaultScene = pxPhysics->createScene(sceneDesc);
 
-	PxPvdSceneClient* pvdClient = pxDefaultScene->getScenePvdClient();
-	if (pvdClient) {
-		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);	// 제약조건 전송
-		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);		// 접촉 전송
-		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);	// 씬 쿼리 전송
-	}
+	pxPvdScene = pxDefaultScene->getScenePvdClient();
+	pxPvdScene->setScenePvdFlags(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS | PxPvdSceneFlag::eTRANSMIT_CONTACTS | PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES);
 
 	pxDefaultMaterial = pxPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-	PxRigidStatic* groundPlane = PxCreatePlane(*pxPhysics, PxPlane(0, 1, 0, 0), *pxDefaultMaterial);
+	PxRigidStatic* groundPlane = PxCreatePlane(*pxPhysics, PxPlane(0, 1, 0, 0), *pxDefaultMaterial); // PxPlane(a, b, c, d) : ax + by + cz + d = 0
 
 	pxDefaultScene->addActor(*groundPlane);
+
+	pxControllerManager = PxCreateControllerManager(*pxDefaultScene);
 
 	// PhysX Scene에서 충돌 정보 수신을 위한 콜백 함수 설정
 	//pxScene->setSimulationEventCallback();

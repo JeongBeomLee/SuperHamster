@@ -158,8 +158,8 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		camera->AddComponent(make_shared<Camera>()); // Near=1, Far=1000, FOV=45도
 		camera->AddComponent(make_shared<TestCameraScript>());
 		camera->GetCamera()->SetFar(10000.f);
-		camera->GetTransform()->SetLocalPosition(Vec3(40.f, 120.f, 200.f));
-		camera->GetTransform()->SetLocalRotation(Vec3(0.3f, 0.f, 0.f));
+		camera->GetTransform()->SetLocalPosition(Vec3(0.f, 100.f, -100.f));
+		camera->GetTransform()->SetLocalRotation(Vec3(0.8f, 0.f, 0.f));
 		uint8 layerIndex = GET_SINGLE(SceneManager)->LayerNameToIndex(L"UI");
 		camera->GetCamera()->SetCullingMaskLayerOnOff(layerIndex, true); // UI는 안 찍음
 		scene->AddGameObject(camera);
@@ -246,6 +246,28 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	}
 #pragma endregion
 
+#pragma region Plane
+	{
+		shared_ptr<GameObject> obj = make_shared<GameObject>();
+		obj->AddComponent(make_shared<Transform>());
+		obj->GetTransform()->SetLocalScale(Vec3(75.f, 1.f, 75.f));
+		obj->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+		obj->SetStatic(true);
+		shared_ptr<MeshRenderer> meshRenderer = make_shared<MeshRenderer>();
+		{
+			shared_ptr<Mesh> mesh = GET_SINGLE(Resources)->LoadCubeMesh();
+			meshRenderer->SetMesh(mesh);
+		}
+		{
+			shared_ptr<Material> material = GET_SINGLE(Resources)->Get<Material>(L"Ground")->Clone();
+			material->SetInt(0, 0);
+			meshRenderer->SetMaterial(material);
+		}
+		obj->AddComponent(meshRenderer);
+		scene->AddGameObject(obj);
+	}
+#pragma endregion
+
 #pragma region UI_Test
 	for (int32 i = 0; i < 6; i++) {
 		shared_ptr<GameObject> obj = make_shared<GameObject>();
@@ -297,7 +319,7 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 #pragma region Hamster
 	{
-		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster.fbx");
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\forest_mother.fbx");
 		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData", L"..\\Resources\\FBX\\Hamster.meshdata");
 
 		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
@@ -305,31 +327,60 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		for (auto& gameObject : gameObjects) {
 			gameObject->SetName(L"Hamster");
 			gameObject->SetCheckFrustum(false);
-			gameObject->GetTransform()->SetLocalPosition(Vec3(50.f, 100.f, 300.f));
-			gameObject->GetTransform()->SetLocalScale(Vec3(10.f, 10.f, 10.f));
+			//gameObject->GetTransform()->SetLocalPosition(Vec3(50.f, 100.f, 300.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(15.f, 15.f, 15.f));
 			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 0.f, 0.f));
 
-			// PxSphereGeometry를 사용하여 PhysX 객체 생성
 			PxPhysics* physics = gEngine->GetPhysics();
+			PxScene* defaultScene = gEngine->GetDefaultScene();
+			PxControllerManager* controllerManager = gEngine->GetControllerManager();
+			PxMaterial* defaultMaterial = gEngine->GetDefaultMaterial();
 
-			float angle = gameObject->GetTransform()->GetLocalRotation().x;
+			// PxBoxController Desc 생성
+			/*PxBoxControllerDesc desc;
+			desc.halfHeight = 1.0f;
+			desc.halfSideExtent = 0.5f;
+			desc.halfForwardExtent = 0.5f;
+			desc.material = defaultMaterial;
+			desc.position = PxExtendedVec3(0.0, 1.0, 0.0);*/
+
+			PxCapsuleControllerDesc desc;
+			desc.height = 2.0f;
+			desc.radius = 0.5f;
+			desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
+			desc.position = PxExtendedVec3(0.0f, 1.0f, 0.0f);
+			desc.material = defaultMaterial;
+
+			// PxBoxController 생성
+			PxController* controller = controllerManager->createController(desc);
+
+			// 90도 회전
+			/*float angle = gameObject->GetTransform()->GetLocalRotation().x;
+
 			PxQuat quat(sin(angle / 2), 0.f, 0.f, cos(angle / 2));
-			PxTransform transform(PxVec3(50.f, 100.f, 300.f), quat);
-			PxRigidDynamic* physicsSphere = physics->createRigidDynamic(transform);
+			PxQuat quat2(0.f, 0.f, 0.f, 1.f);
+			PxTransform transform(PxVec3(0.f, 15.f, 0.f), quat);
+
+			PxRigidDynamic* playerActor = physics->createRigidDynamic(transform);
 
 			PxMaterial* defaultMaterial = gEngine->GetDefaultMaterial();
-			PxShape* shape = physics->createShape(PxSphereGeometry(0.5f), *defaultMaterial);
-			physicsSphere->attachShape(*shape);
-			physicsSphere->setMass(1.0f);
+			PxShape* shape = physics->createShape(PxBoxGeometry(0.5f, 1.f, 0.5f), *defaultMaterial);
+			playerActor->attachShape(*shape);
+			PxRigidBodyExt::updateMassAndInertia(*playerActor, 80.0f);
 
-			PxScene* defaultScene = gEngine->GetDefaultScene();
-			defaultScene->addActor(*physicsSphere);
-			shape->release();
+			playerActor->setCMassLocalPose(PxTransform(PxVec3(0.f, -0.5f, 0.f)));
+			PxRigidBodyExt::setMassAndUpdateInertia(*playerActor , 100.0f);
+			playerActor->setLinearDamping(0.5f);
+			playerActor->setMaxAngularVelocity(1.0f);
+			playerActor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+
+			defaultScene->addActor(*playerActor);
+			shape->release();*/
 
 			// PhysXComponent 생성 및 추가
-			shared_ptr<PhysXComponent> physicsComponent = make_shared<PhysXComponent>(physicsSphere);
-			physicsComponent.get()->SetPhysicsActor(physicsSphere);
-			gameObject->AddComponent(physicsComponent);
+			/*shared_ptr<PhysXComponent> physicsComponent = make_shared<PhysXComponent>(playerActor);
+			physicsComponent.get()->SetPhysicsActor(playerActor);
+			gameObject->AddComponent(physicsComponent);*/
 
 			scene->AddGameObject(gameObject);
 			gameObject->AddComponent(make_shared<TestAnimation>());

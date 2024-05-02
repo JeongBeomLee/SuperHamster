@@ -34,6 +34,8 @@ public:
 	PxPhysics*							GetPhysics()									{ return pxPhysics; }
 	PxMaterial*							GetDefaultMaterial()							{ return pxDefaultMaterial; }
 	PxScene*							GetDefaultScene()								{ return pxDefaultScene; }
+	PxPvdSceneClient*					GetPvdScene()									{ return pxPvdScene; }
+	PxControllerManager*				GetControllerManager()							{ return pxControllerManager; }
 
 public:
 	void Render();
@@ -65,10 +67,12 @@ private:
 	PxDefaultErrorCallback		errorCallback;
 	PxFoundation*				pxFoundation		= nullptr;
 	PxPhysics*					pxPhysics			= nullptr;
-	PxPvd*						pxPvd				= nullptr;
+	PxPvd*						pxPvd				= nullptr;	// 디버그용
+	PxPvdSceneClient*			pxPvdScene			= nullptr;	// 디버그용
 	PxDefaultCpuDispatcher*		pxCpuDispatcher		= nullptr;
 	PxScene*					pxDefaultScene		= nullptr;
 	PxMaterial*					pxDefaultMaterial	= nullptr;
+	PxControllerManager*		pxControllerManager	= nullptr;
 
 	vector<shared_ptr<ConstantBuffer>>	constantBuffers;
 	array<shared_ptr<RenderTargetGroup>, RENDER_TARGET_GROUP_COUNT> renderTargetGroups;
