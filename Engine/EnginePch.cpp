@@ -3,6 +3,9 @@
 #include "Engine.h"
 
 unique_ptr<Engine> gEngine = make_unique<Engine>();
+unique_ptr<Vec3> cameraPos = make_unique<Vec3>();
+unique_ptr<Vec3> cameraRot = make_unique<Vec3>();
+
 
 wstring s2ws(const string& s)
 {

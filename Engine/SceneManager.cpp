@@ -19,6 +19,9 @@
 #include "TestAnimation.h"
 #include "PhysXComponent.h"
 #include "Timer.h"
+#include "TestMap.h"
+#include "Mesh.h"
+#include "FBXLoader.h"
 
 void SceneManager::Update()
 {
@@ -158,8 +161,8 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		camera->AddComponent(make_shared<Camera>()); // Near=1, Far=1000, FOV=45도
 		camera->AddComponent(make_shared<TestCameraScript>());
 		camera->GetCamera()->SetFar(10000.f);
-		camera->GetTransform()->SetLocalPosition(Vec3(0.f, 100.f, -100.f));
-		camera->GetTransform()->SetLocalRotation(Vec3(0.8f, 0.f, 0.f));
+		camera->GetTransform()->SetLocalPosition(Vec3(2689.178711f, 1379.9555811f, -868.619293f));
+		camera->GetTransform()->SetLocalRotation(Vec3(0.874386f, -1.035933f, 0.f));
 		uint8 layerIndex = GET_SINGLE(SceneManager)->LayerNameToIndex(L"UI");
 		camera->GetCamera()->SetCullingMaskLayerOnOff(layerIndex, true); // UI는 안 찍음
 		scene->AddGameObject(camera);
@@ -273,8 +276,8 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		shared_ptr<GameObject> obj = make_shared<GameObject>();
 		obj->SetLayerIndex(GET_SINGLE(SceneManager)->LayerNameToIndex(L"UI")); // UI
 		obj->AddComponent(make_shared<Transform>());
-		obj->GetTransform()->SetLocalScale(Vec3(100.f, 100.f, 100.f));
-		obj->GetTransform()->SetLocalPosition(Vec3(-350.f + (i * 120), 250.f, 500.f));
+		obj->GetTransform()->SetLocalScale(Vec3(100.f, 80.f, 100.f));
+		obj->GetTransform()->SetLocalPosition(Vec3(-600.f + (i * 105), 330.f, 500.f));
 		shared_ptr<MeshRenderer> meshRenderer = make_shared<MeshRenderer>();
 		{
 			shared_ptr<Mesh> mesh = GET_SINGLE(Resources)->LoadRectangleMesh();
@@ -317,6 +320,10 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	}
 #pragma endregion
 
+	PxPhysics* physics = gEngine->GetPhysics();
+	PxScene* defaultScene = gEngine->GetDefaultScene();
+	PxControllerManager* controllerManager = gEngine->GetControllerManager();
+	PxMaterial* defaultMaterial = gEngine->GetDefaultMaterial();
 #pragma region Hamster
 	{
 		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\forest_mother.fbx");
@@ -327,14 +334,9 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		for (auto& gameObject : gameObjects) {
 			gameObject->SetName(L"Hamster");
 			gameObject->SetCheckFrustum(false);
-			//gameObject->GetTransform()->SetLocalPosition(Vec3(50.f, 100.f, 300.f));
-			gameObject->GetTransform()->SetLocalScale(Vec3(15.f, 15.f, 15.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(200.f, 200.f, 200.f));
 			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 0.f, 0.f));
-
-			PxPhysics* physics = gEngine->GetPhysics();
-			PxScene* defaultScene = gEngine->GetDefaultScene();
-			PxControllerManager* controllerManager = gEngine->GetControllerManager();
-			PxMaterial* defaultMaterial = gEngine->GetDefaultMaterial();
+			gameObject->GetTransform()->SetLocalPosition(Vec3(290.215790f, 92.128059f, -181.242050f));
 
 			// PxBoxController Desc 생성
 			/*PxBoxControllerDesc desc;
@@ -345,14 +347,15 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 			desc.position = PxExtendedVec3(0.0, 1.0, 0.0);*/
 
 			PxCapsuleControllerDesc desc;
-			desc.height = 2.0f;
-			desc.radius = 0.5f;
+			desc.height = 100.0f;
+			desc.radius = 25.0f;
 			desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
-			desc.position = PxExtendedVec3(0.0f, 1.0f, 0.0f);
+			desc.position = PxExtendedVec3(290.215790f, 92.128059f, -181.242050f);
 			desc.material = defaultMaterial;
 
-			// PxBoxController 생성
+			// PxController 생성
 			PxController* controller = controllerManager->createController(desc);
+			controller->setUpDirection(PxVec3(0.f, 1.f, 0.f));
 
 			// 90도 회전
 			/*float angle = gameObject->GetTransform()->GetLocalRotation().x;
@@ -385,6 +388,86 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 			scene->AddGameObject(gameObject);
 			gameObject->AddComponent(make_shared<TestAnimation>());
 		}
+	}
+#pragma endregion
+
+#pragma region Map
+	{
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Tutorial.fbx");
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"MapMeshData", L"..\\Resources\\FBX\\Hamster.meshdata");
+
+		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
+
+		for (auto& gameObject : gameObjects) {
+			gameObject->SetName(L"Map");
+			gameObject->SetCheckFrustum(true);
+			gameObject->GetTransform()->SetLocalPosition(Vec3(0.f, 30.f, 0.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 0.f, 0.f));
+
+			scene->AddGameObject(gameObject);
+			gameObject->AddComponent(make_shared<TestMap>());
+		
+		}
+
+		FbxMeshInfo* meshInfo = meshData->GetMesh(0)->GetFbxMeshInfo();
+
+		vector<PxVec3> physxVertices;
+		physxVertices.reserve(meshInfo->vertices.size());
+
+		vector<PxU32> physxIndices;
+		physxIndices.reserve(meshInfo->indices[0].size());
+
+		for (const auto& vertex : meshInfo->vertices) {
+			physxVertices.emplace_back(vertex.pos.x, vertex.pos.y, vertex.pos.z);
+		}
+
+		for (const auto& index : meshInfo->indices[0]) {
+			physxIndices.emplace_back(index);
+		}
+
+		// PxCookingParams 설정
+		PxCookingParams params(physics->getTolerancesScale());
+		params.meshPreprocessParams = PxMeshPreprocessingFlags(PxMeshPreprocessingFlag::eWELD_VERTICES);
+		params.convexMeshCookingType = PxConvexMeshCookingType::eQUICKHULL;
+
+		// PxTriangleMeshDesc 설정
+		PxTriangleMeshDesc meshDesc;
+		meshDesc.points.count = static_cast<PxU32>(physxVertices.size());
+		meshDesc.points.stride = sizeof(PxVec3);
+		meshDesc.points.data = physxVertices.data();
+		meshDesc.triangles.count = static_cast<PxU32>(physxIndices.size() / 3);
+		meshDesc.triangles.stride = 3 * sizeof(PxU32);
+		meshDesc.triangles.data = physxIndices.data();
+
+		// PxTriangleMeshDesc를 직렬화하기 위한 메모리 스트림 생성
+		PxDefaultMemoryOutputStream writeBuffer;
+		PxTriangleMeshCookingResult::Enum result;
+		bool status = PxCookTriangleMesh(params, meshDesc, writeBuffer, &result);
+		if (!status) {
+			cerr << "Failed to cook triangle mesh." << endl;
+		}
+
+		if (writeBuffer.getSize() == 0) {
+			cerr << "WriteBuffer is empty." << endl;
+		}
+
+		// 직렬화된 데이터를 PxInputStream으로 변환
+		PxDefaultMemoryInputData readBuffer(writeBuffer.getData(), writeBuffer.getSize());
+		PxTriangleMesh* triangleMesh = physics->createTriangleMesh(readBuffer);
+
+		PxTriangleMeshGeometry triangleMeshGeometry(triangleMesh, PxMeshScale(PxVec3(1, 1, 1)));
+		PxRigidStatic* triangleMeshActor = physics->createRigidStatic(PxTransform(PxVec3(0, 0, 0)));
+		PxShape* triangleMeshShape = physics->createShape(triangleMeshGeometry, *defaultMaterial);
+
+		// x축 기준 -90도 회전
+		PxQuat quat(-XM_PIDIV2, PxVec3(1, 0, 0));
+		triangleMeshActor->setGlobalPose(PxTransform(PxVec3(0, 0, 0), quat));
+
+		triangleMeshActor->attachShape(*triangleMeshShape);
+		defaultScene->addActor(*triangleMeshActor);
+
+		triangleMeshShape->release();
 	}
 #pragma endregion
 

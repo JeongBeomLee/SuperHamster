@@ -112,13 +112,67 @@ void FBXLoader::LoadAnimationInfo()
 	}
 }
 
+void FBXLoader::LoadTransform(FbxNode* node, FbxMeshInfo* meshInfo)
+{
+	FbxVector4 translation = node->GetGeometricTranslation(FbxNode::eSourcePivot);
+	FbxVector4 rotation = node->GetGeometricRotation(FbxNode::eSourcePivot);
+	FbxVector4 scaling = node->GetGeometricScaling(FbxNode::eSourcePivot);
+
+	FbxAMatrix transform(translation, rotation, scaling);
+	FbxAMatrix globalTransform = GetGlobalTransform(node);
+
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			meshInfo->transform.m[i][j] = static_cast<float>(transform.Get(i, j));
+			meshInfo->globalTransform.m[i][j] = static_cast<float>(globalTransform.Get(i, j));
+		}
+	}
+}
+
+FbxAMatrix FBXLoader::GetGlobalTransform(FbxNode* node)
+{
+	FbxAMatrix globalTransform;
+	FbxAMatrix localTransform = node->EvaluateLocalTransform();
+
+	if (node->GetParent()) {
+		globalTransform = GetGlobalTransform(node->GetParent());
+		globalTransform = globalTransform * localTransform;
+	}
+	else {
+		globalTransform = localTransform;
+	}
+
+	return globalTransform;
+}
+
 void FBXLoader::ParseNode(FbxNode* node)
 {
 	FbxNodeAttribute* attribute = node->GetNodeAttribute();
 
-	if (attribute)
+	/*if (attribute)
 		if (attribute->GetAttributeType() == FbxNodeAttribute::eMesh)
-			LoadMesh(node->GetMesh());
+			LoadMesh(node->GetMesh());*/
+
+	if (attribute) {
+		switch (attribute->GetAttributeType()) {
+			case FbxNodeAttribute::eMesh: {
+			
+				FbxMesh* mesh = node->GetMesh();
+
+				// 새로운 MeshInfo 생성
+				_meshes.push_back(FbxMeshInfo());
+				FbxMeshInfo& meshInfo = _meshes.back();
+				meshInfo.name = s2ws(mesh->GetName());
+
+				// 트랜스폼 정보 로드
+				LoadTransform(node, &meshInfo);
+
+				// 메시 로드
+				LoadMesh(mesh, &meshInfo);
+				break;
+			}
+		}
+	}
 
 	// Material 로드
 	const uint32 materialCount = node->GetMaterialCount();
@@ -133,19 +187,14 @@ void FBXLoader::ParseNode(FbxNode* node)
 		ParseNode(node->GetChild(i));
 }
 
-void FBXLoader::LoadMesh(FbxMesh* mesh)
+void FBXLoader::LoadMesh(FbxMesh* mesh, FbxMeshInfo* meshInfo)
 {
-	// 새 메시를 위한 meshInfo 생성
-	_meshes.push_back(FbxMeshInfo());
-	FbxMeshInfo& meshInfo = _meshes.back();
-	meshInfo.name = s2ws(mesh->GetName());
-
 	// FBX 메시에서 정점, 노말, UV 정보등을 가져온다.
 	FbxVector4* controlPoints = mesh->GetControlPoints();
 	//int controlPointsCount = mesh->GetControlPointsCount();
 
 	const int32 materialCount = mesh->GetNode()->GetMaterialCount();
-	meshInfo.indices.resize(materialCount);
+	meshInfo->indices.resize(materialCount);
 
 	FbxGeometryElementMaterial* geometryElementMaterial = mesh->GetElementMaterial();
 
@@ -188,161 +237,35 @@ void FBXLoader::LoadMesh(FbxMesh* mesh)
 				newVertex.pos.y = static_cast<float>(controlPoints[controlPointIndex].mData[2]);
 				newVertex.pos.z = static_cast<float>(controlPoints[controlPointIndex].mData[1]);
 				newVertex.uv = Vec2(currentUV.mData[0], 1.f - currentUV.mData[1]);
-				meshInfo.vertices.push_back(newVertex);
+				meshInfo->vertices.push_back(newVertex);
 
 				BoneWeight newBoneWeight = {};
-				meshInfo.boneWeights.push_back(newBoneWeight);
+				meshInfo->boneWeights.push_back(newBoneWeight);
 
 				// 새 인덱스를 저장.
-				int32_t newVertexIndex = static_cast<int32_t>(meshInfo.vertices.size()) - 1;
+				int32_t newVertexIndex = static_cast<int32_t>(meshInfo->vertices.size()) - 1;
 				arrIdx[j] = newVertexIndex;
 
 				// 이 정점 인덱스와 현재 UV를 맵에 저장.
 				verticesList.push_back(std::make_pair(newVertexIndex, currentUV));
 
 				// 노말, 탄젠트 등의 데이터를 새 정점에 설정.
-				GetNormal(mesh, &meshInfo, newVertexIndex, vertexCounter);
-				GetTangent(mesh, &meshInfo, newVertexIndex, vertexCounter);
+				GetNormal(mesh, meshInfo, newVertexIndex, vertexCounter);
+				GetTangent(mesh, meshInfo, newVertexIndex, vertexCounter);
 			}
 			++vertexCounter;
 		}
 
 		// 삼각형의 정점 인덱스를 메쉬의 인덱스 배열에 추가.
 		const uint32 subsetIdx = geometryElementMaterial->GetIndexArray().GetAt(i);
-		meshInfo.indices[subsetIdx].push_back(arrIdx[0]);
-		meshInfo.indices[subsetIdx].push_back(arrIdx[2]);
-		meshInfo.indices[subsetIdx].push_back(arrIdx[1]);
+		meshInfo->indices[subsetIdx].push_back(arrIdx[0]);
+		meshInfo->indices[subsetIdx].push_back(arrIdx[2]);
+		meshInfo->indices[subsetIdx].push_back(arrIdx[1]);
 	}
 
 	// Animation
-	LoadAnimationData(mesh, &meshInfo);
+	LoadAnimationData(mesh, meshInfo);
 }
-
-//void FBXLoader::LoadMesh(FbxMesh* mesh)
-//{
-//	// 새 메시를 위한 meshInfo 생성
-//	_meshes.push_back(FbxMeshInfo());
-//	FbxMeshInfo& meshInfo = _meshes.back();
-//	meshInfo.name = s2ws(mesh->GetName());
-//
-//	// 제어 점 인덱스와 UV 좌표에 따른 고유 정점을 추적하기 위한 맵 생성.
-//	std::unordered_map<int32_t, std::vector<std::pair<int32_t, FbxVector2>>> uniqueVerticesMap;
-//
-//	// FBX 메시에서 정점, 노말, UV 정보등을 가져온다.
-//	//const int32 vertexCount = mesh->GetControlPointsCount();
-//	//const int32 vertexCount = vertexCounter;
-//	//meshInfo.vertices.resize(vertexCount);
-//	//meshInfo.boneWeights.resize(vertexCount);
-//
-//	FbxVector4* controlPoints = mesh->GetControlPoints();
-//	//int controlPointsCount = mesh->GetControlPointsCount();
-//	//meshInfo.boneWeights.resize(controlPointsCount);
-//	//for (int32 i = 0; i < vertexCount; ++i) {
-//	//	meshInfo.vertices[i].pos.x = static_cast<float>(controlPoints[i].mData[0]);
-//	//	meshInfo.vertices[i].pos.y = static_cast<float>(controlPoints[i].mData[2]);
-//	//	meshInfo.vertices[i].pos.z = static_cast<float>(controlPoints[i].mData[1]);
-//	//}
-//
-//	const int32 materialCount = mesh->GetNode()->GetMaterialCount();
-//	meshInfo.indices.resize(materialCount);
-//
-//	FbxGeometryElementMaterial* geometryElementMaterial = mesh->GetElementMaterial();
-//
-//	// 삼각형 메시가 아니면 오류
-//	const int32 polygonSize = mesh->GetPolygonSize(0);
-//	assert(polygonSize == 3);
-//
-//	uint32 arrIdx[3];
-//	uint32 vertexCounter = 0; // 정점의 개수
-//
-//	const int32 triCount = mesh->GetPolygonCount(); // 메쉬의 삼각형 개수를 가져온다
-//	// 각 폴리곤에 대해 반복.
-//	for (int32 i = 0; i < triCount; ++i) {
-//		for (int32 j = 0; j < 3; ++j) {
-//			// 제어 점 인덱스를 가져옴.
-//			int32 controlPointIndex = mesh->GetPolygonVertex(i, j);
-//
-//			// 현재 폴리곤의 정점에 대한 UV를 읽음.
-//			FbxVector2 currentUV;
-//			bool unmappedUV;
-//			const char* uvSetName = mesh->GetElementUV()->GetName();
-//			mesh->GetPolygonVertexUV(i, j, uvSetName, currentUV, unmappedUV);
-//
-//			// 이 제어 점 인덱스와 UV 조합이 고유한지 확인.
-//			auto& verticesList = uniqueVerticesMap[controlPointIndex];
-//			auto it = std::find_if(verticesList.begin(), verticesList.end(),
-//				[&currentUV](const std::pair<int32_t, FbxVector2>& elem) {
-//					return elem.second == currentUV;
-//				});
-//
-//			if (it != verticesList.end()) {
-//				// 기존 정점 인덱스를 다시 사용하여 폴리곤 인덱스 배열에 추가.
-//				arrIdx[j] = it->first;
-//			}
-//			else {
-//				// 새 정점을 만들고 메쉬의 정점에 추가.
-//				// 이것은 controlPointIndex에 있는 정점을 복제하고 새 UV 좌표를 설정하는 것을 포함함.
-//				Vertex newVertex = {};
-//				newVertex.pos.x = static_cast<float>(controlPoints[controlPointIndex].mData[0]);
-//				newVertex.pos.y = static_cast<float>(controlPoints[controlPointIndex].mData[2]);
-//				newVertex.pos.z = static_cast<float>(controlPoints[controlPointIndex].mData[1]);
-//				newVertex.uv = Vec2(currentUV.mData[0], 1.f - currentUV.mData[1]);
-//				meshInfo.vertices.push_back(newVertex);
-//
-//				BoneWeight newBoneWeight = {};
-//				meshInfo.boneWeights.push_back(newBoneWeight);
-//
-//				// 새 인덱스를 저장.
-//				int32_t newVertexIndex = static_cast<int32_t>(meshInfo.vertices.size()) - 1;
-//				arrIdx[j] = newVertexIndex;
-//
-//				// 이 정점 인덱스와 현재 UV를 맵에 저장.
-//				verticesList.push_back(std::make_pair(newVertexIndex, currentUV));
-//
-//				// 노말, 탄젠트 등의 데이터를 새 정점에 설정.
-//				GetNormal(mesh, &meshInfo, newVertexIndex, vertexCounter);
-//				GetTangent(mesh, &meshInfo, newVertexIndex, vertexCounter);
-//			}
-//			++vertexCounter;
-//		}
-//
-//		// 삼각형의 정점 인덱스를 메쉬의 인덱스 배열에 추가.
-//		const uint32 subsetIdx = geometryElementMaterial->GetIndexArray().GetAt(i);
-//		meshInfo.indices[subsetIdx].push_back(arrIdx[0]);
-//		meshInfo.indices[subsetIdx].push_back(arrIdx[2]);
-//		meshInfo.indices[subsetIdx].push_back(arrIdx[1]);
-//	}
-//
-//	//int32 vertexCount = meshInfo.vertices.size();
-//	//for (int32 i = 0; i < vertexCount; ++i) {
-//	//	meshInfo.vertices[i].pos.x = static_cast<float>(controlPoints[i].mData[0]);
-//	//	meshInfo.vertices[i].pos.y = static_cast<float>(controlPoints[i].mData[2]);
-//	//	meshInfo.vertices[i].pos.z = static_cast<float>(controlPoints[i].mData[1]);
-//	//}
-//
-//
-//	//for (int32 i = 0; i < triCount; ++i) {
-//	//	for (int32 j = 0; j < 3; ++j) {
-//	//		int32 controlPointIndex = mesh->GetPolygonVertex(i, j); // 제어점의 인덱스 추출
-//	//		arrIdx[j] = controlPointIndex;
-//
-//	//		GetNormal(mesh, &meshInfo, controlPointIndex, vertexCounter);
-//	//		GetTangent(mesh, &meshInfo, controlPointIndex, vertexCounter);
-//	//		GetUV(mesh, &meshInfo, controlPointIndex, mesh->GetTextureUVIndex(i, j));
-//
-//	//		++vertexCounter;
-//	//	}
-//
-//	//	const uint32 subsetIdx = geometryElementMaterial->GetIndexArray().GetAt(i);
-//	//	meshInfo.indices[subsetIdx].push_back(arrIdx[0]);
-//	//	meshInfo.indices[subsetIdx].push_back(arrIdx[2]);
-//	//	meshInfo.indices[subsetIdx].push_back(arrIdx[1]);
-//	//}
-//
-//	// Animation
-//	//meshInfo.boneWeights.resize(meshInfo.vertices.size());
-//	LoadAnimationData(mesh, &meshInfo);
-//}
 
 void FBXLoader::LoadMaterial(FbxSurfaceMaterial* surfaceMaterial)
 {

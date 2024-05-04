@@ -26,6 +26,7 @@ shared_ptr<MeshData> MeshData::LoadFromFBX(const wstring& path)
 
 	for (int32 i = 0; i < loader.GetMeshCount(); ++i) {
 		shared_ptr<Mesh> mesh = Mesh::CreateFromFBX(&loader.GetMesh(i), loader);
+		mesh->SetFbxMeshInfo(loader.GetMesh(i));
 
 		GET_SINGLE(Resources)->Add<Mesh>(mesh->GetName(), mesh);
 
@@ -39,6 +40,11 @@ shared_ptr<MeshData> MeshData::LoadFromFBX(const wstring& path)
 		MeshRenderInfo info = {};
 		info.mesh = mesh;
 		info.materials = materials;
+
+		// 트랜스폼 정보 추가
+		info.transform = loader.GetMesh(i).transform;
+		info.globalTransform = loader.GetMesh(i).globalTransform;
+
 		meshData->_meshRenders.push_back(info);
 	}
 

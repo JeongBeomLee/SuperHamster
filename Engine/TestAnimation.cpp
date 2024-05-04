@@ -90,7 +90,10 @@ void TestAnimation::Update()
 		}
 
 		// 이동 속도 설정
-		disp *= 50.0f * DELTA_TIME;
+		disp *= 550.0f * DELTA_TIME;
+
+		// 중력 적용
+		disp.y -= 20.8f * DELTA_TIME;
 
 		// 캐릭터 컨트롤러 이동
 		PxControllerFilters filters;
@@ -102,5 +105,13 @@ void TestAnimation::Update()
 		Position.y = playerController->getPosition().y;
 		Position.z = playerController->getPosition().z;
 		GetTransform()->SetLocalPosition(Position);
+
+		cameraPos->x = GetTransform()->GetLocalPosition().x;
+		cameraPos->y = GetTransform()->GetLocalPosition().y;
+		cameraPos->z = GetTransform()->GetLocalPosition().z;
+
+		cameraRot->x = GetTransform()->GetLocalRotation().x;
+		cameraRot->y = GetTransform()->GetLocalRotation().y;
+		cameraRot->z = GetTransform()->GetLocalRotation().z;
 	}
 }

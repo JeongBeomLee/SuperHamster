@@ -17,6 +17,7 @@
 #include <fstream>
 #include <numeric>
 #include <filesystem>
+#include <iostream>
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -202,6 +203,8 @@ struct AnimFrameParams
 };
 
 extern unique_ptr<class Engine> gEngine;
+extern unique_ptr<Vec3> cameraPos;
+extern unique_ptr<Vec3> cameraRot;
 
 // Utils
 wstring s2ws(const string& s);

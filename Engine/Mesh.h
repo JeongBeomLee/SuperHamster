@@ -1,8 +1,10 @@
 #pragma once
 #include "Object.h"
+#include "FBXLoader.h"
 
 class Material;
 class StructuredBuffer;
+class Transform;
 
 struct IndexBufferInfo
 {
@@ -71,6 +73,9 @@ public:
 	shared_ptr<StructuredBuffer>			GetBoneFrameDataBuffer(int32 index = 0) { return _frameBuffer[index]; } // 전체 본 프레임 정보
 	shared_ptr<StructuredBuffer>			GetBoneOffsetBuffer()					{ return  _offsetBuffer; }
 
+	FbxMeshInfo*							GetFbxMeshInfo()						{ return &_fbxMeshInfo; }
+	void									SetFbxMeshInfo(FbxMeshInfo info)		{ _fbxMeshInfo = info; }
+
 private:
 	ComPtr<ID3D12Resource>					_vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW				_vertexBufferView = {};
@@ -84,5 +89,8 @@ private:
 
 	shared_ptr<StructuredBuffer>			_offsetBuffer;	// 각 뼈의 offset 행렬
 	vector<shared_ptr<StructuredBuffer>>	_frameBuffer;	// 전체 본 프레임 정보
+
+	vector<Transform>						_transforms;
+	FbxMeshInfo								_fbxMeshInfo;
 };
 

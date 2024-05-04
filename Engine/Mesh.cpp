@@ -5,6 +5,7 @@
 #include "InstancingBuffer.h"
 #include "FBXLoader.h"
 #include "StructuredBuffer.h"
+#include "Transform.h"
 
 Mesh::Mesh() : Object(OBJECT_TYPE::MESH)
 {
@@ -88,6 +89,9 @@ void Mesh::CreateFromMeshData(const vector<Vertex>& vertexBuffer, const vector<v
 
 void Mesh::CreateVertexBuffer(const vector<Vertex>& buffer)
 {
+	if (buffer.empty())
+		return;
+
 	_vertexCount = static_cast<uint32>(buffer.size());
 	uint32 bufferSize = _vertexCount * sizeof(Vertex);
 

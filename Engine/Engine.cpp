@@ -125,10 +125,23 @@ void Engine::ShowFps()
 {
 	uint32 fps = GET_SINGLE(Timer)->GetFps();
 
-	WCHAR text[100] = L"";
-	::wsprintf(text, L"FPS : %d", fps);
 
-	::SetWindowText(window.hwnd, text);
+	wstring text = L"FPS: " 
+		+ to_wstring(fps)
+		+ L", Camera Pos: " 
+		+ to_wstring(cameraPos->x)
+		+ L", " 
+		+ to_wstring(cameraPos->y)
+		+ L", " 
+		+ to_wstring(cameraPos->z)
+		+ L", Camera Rot: " 
+		+ to_wstring(cameraRot->x)
+		+ L", " 
+		+ to_wstring(cameraRot->y)
+		+ L", " 
+		+ to_wstring(cameraRot->z);
+
+	::SetWindowText(window.hwnd, text.c_str());
 }
 
 void Engine::CreateConstantBuffer(CBV_REGISTER reg, uint32 bufferSize, uint32 count)

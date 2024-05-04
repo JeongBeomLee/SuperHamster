@@ -45,12 +45,16 @@ struct BoneWeight
 
 struct FbxMeshInfo
 {
-    wstring                             name;
-    vector<Vertex>                      vertices;
-    vector<vector<uint32_t>>            indices;
-    vector<FbxMaterialInfo>             materials;
-    vector<BoneWeight>                  boneWeights; // Bone weights
-    bool                                hasAnimation;
+    wstring name;
+    vector<Vertex> vertices;
+    vector<vector<uint32_t>> indices;
+    vector<FbxMaterialInfo> materials;
+    vector<BoneWeight> boneWeights; // Bone weights
+    bool hasAnimation;
+
+    // 트랜스폼 정보 추가
+    Matrix transform;         // 로컬 변환 행렬
+    Matrix globalTransform;   // 글로벌 변환 행렬
 };
 
 struct FbxKeyFrameInfo
@@ -84,7 +88,7 @@ public:
     void LoadFbx(const wstring& path);
 
     int32_t GetMeshCount() const { return static_cast<int32_t>(_meshes.size()); } // Added const correctness
-    const FbxMeshInfo& GetMesh(int32_t idx) const { return _meshes[idx]; } // Added const correctness
+    FbxMeshInfo& GetMesh(int32_t idx) { return _meshes[idx]; } // Added const correctness
     vector<shared_ptr<FbxBoneInfo>>& GetBones() { return _bones; }
     vector<shared_ptr<FbxAnimClipInfo>>& GetAnimClip() { return _animClips; }
     wstring GetResourceDirectory() const { return _resourceDirectory; } // Added const correctness
@@ -93,7 +97,7 @@ private:
     void Import(const wstring& path);
 
     void ParseNode(FbxNode* root);
-    void LoadMesh(FbxMesh* mesh);
+    void LoadMesh(FbxMesh* mesh, FbxMeshInfo* meshInfo);
     void LoadMaterial(FbxSurfaceMaterial* surfaceMaterial);
 
     void        GetNormal(FbxMesh* mesh, FbxMeshInfo* container, int32_t idx, int32_t vertexCounter);
@@ -108,6 +112,8 @@ private:
     // Animation
     void LoadBones(FbxNode* node, int32_t idx = 0, int32_t parentIdx = -1); // Made LoadBones overload explicit
     void LoadAnimationInfo();
+    void LoadTransform(FbxNode* node, FbxMeshInfo* meshInfo);
+    FbxAMatrix GetGlobalTransform(FbxNode* node);
 
     void LoadAnimationData(FbxMesh* mesh, FbxMeshInfo* meshInfo);
     void LoadBoneWeight(FbxCluster* cluster, int32_t boneIdx, FbxMeshInfo* meshInfo);
