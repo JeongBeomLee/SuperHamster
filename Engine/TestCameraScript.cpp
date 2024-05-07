@@ -6,8 +6,9 @@
 #include "Input.h"
 #include "Timer.h"
 #include "SceneManager.h"
+#include "Scene.h"
 
-TestCameraScript::TestCameraScript()
+TestCameraScript::TestCameraScript() : m_RotationX(45.0f), m_RotationY(-35.0f), m_Distance(1200.0f), m_Height(75.0f)
 {
 }
 
@@ -17,39 +18,49 @@ TestCameraScript::~TestCameraScript()
 
 void TestCameraScript::LateUpdate()
 {
+	/*shared_ptr<GameObject> player = GET_SINGLE(SceneManager)->GetActiveScene()->GetGameObjectByName(L"Hamster");
+	Vec3 playerPos = player->GetTransform()->GetLocalPosition();*/
+
+	shared_ptr<GameObject> player = GET_SINGLE(SceneManager)->GetActiveScene()->GetGameObjectByName(L"Hamster");
+
+	Vec3 playerPos = player->GetTransform()->GetLocalPosition();
+
+	// 카메라의 회전 설정
+	float rotationX = XMConvertToRadians(m_RotationX);
+	float rotationY = XMConvertToRadians(m_RotationY);
+	Vec3 cameraRotation(rotationX, rotationY, 0.0f);
+	GetTransform()->SetLocalRotation(cameraRotation);
+
+	// 카메라의 위치 설정
+	Vec3 cameraDirection = GetTransform()->GetLook();
+	Vec3 cameraPos = playerPos - cameraDirection * m_Distance + Vec3(0.0f, m_Height, 0.0f);
+	GetTransform()->SetLocalPosition(cameraPos);
+
 	Vec3 pos = GetTransform()->GetLocalPosition();
 
 	if (INPUT->GetButton(KEY_TYPE::W))
-		pos += GetTransform()->GetLook() * _speed * DELTA_TIME;
+		m_RotationX += 1.f;
 
 	if (INPUT->GetButton(KEY_TYPE::S))
-		pos -= GetTransform()->GetLook() * _speed * DELTA_TIME;
+		m_RotationX -= 1.f;
 
 	if (INPUT->GetButton(KEY_TYPE::A))
-		pos -= GetTransform()->GetRight() * _speed * DELTA_TIME;
+		m_RotationY += 1.f;
 
 	if (INPUT->GetButton(KEY_TYPE::D))
-		pos += GetTransform()->GetRight() * _speed * DELTA_TIME;
+		m_RotationY -= 1.f;
 
 	if (INPUT->GetButton(KEY_TYPE::SPACE))
-		pos.y += _speed * DELTA_TIME;
+		m_Distance += 1.f;
 
 	if (INPUT->GetButton(KEY_TYPE::LCONTROL))
-		pos.y -= _speed * DELTA_TIME;
+		m_Distance -= 1.f;
 
 	if (INPUT->GetButton(KEY_TYPE::Q))
-	{
-		Vec3 rotation = GetTransform()->GetLocalRotation();
-		rotation.x += DELTA_TIME * 0.5f;
-		GetTransform()->SetLocalRotation(rotation);
-	}
+		m_Height += 1.f;
 
 	if (INPUT->GetButton(KEY_TYPE::E))
-	{
-		Vec3 rotation = GetTransform()->GetLocalRotation();
-		rotation.x -= DELTA_TIME * 0.5f;
-		GetTransform()->SetLocalRotation(rotation);
-	}
+		m_Height -= 1.f;
 
 	if (INPUT->GetButton(KEY_TYPE::Z))
 	{
@@ -79,5 +90,5 @@ void TestCameraScript::LateUpdate()
 	cameraRot->y = GetTransform()->GetLocalRotation().y;
 	cameraRot->z = GetTransform()->GetLocalRotation().z;*/
 
-	GetTransform()->SetLocalPosition(pos);
+	//GetTransform()->SetLocalPosition(pos);
 }

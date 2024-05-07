@@ -33,6 +33,7 @@ public:
 	void RemoveGameObject(shared_ptr<GameObject> gameObject);
 
 	const vector<shared_ptr<GameObject>>& GetGameObjects() { return _gameObjects; }
+	const shared_ptr<GameObject> GetGameObjectByName(const wstring& name) const;
 
 private:
 	vector<shared_ptr<GameObject>>		_gameObjects;

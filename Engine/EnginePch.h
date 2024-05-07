@@ -209,3 +209,4 @@ extern unique_ptr<Vec3> cameraRot;
 // Utils
 wstring s2ws(const string& s);
 string ws2s(const wstring& s);
+Vec3 Slerp(Vec3& start, Vec3& end, float t);

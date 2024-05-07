@@ -161,8 +161,8 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		camera->AddComponent(make_shared<Camera>()); // Near=1, Far=1000, FOV=45도
 		camera->AddComponent(make_shared<TestCameraScript>());
 		camera->GetCamera()->SetFar(10000.f);
-		camera->GetTransform()->SetLocalPosition(Vec3(2689.178711f, 1379.9555811f, -868.619293f));
-		camera->GetTransform()->SetLocalRotation(Vec3(0.874386f, -1.035933f, 0.f));
+		camera->GetTransform()->SetLocalPosition(Vec3(1250.f, 1665.f, -485.74f));
+		camera->GetTransform()->SetLocalRotation(Vec3(0.848181, -0.929444f, 0.f));
 		uint8 layerIndex = GET_SINGLE(SceneManager)->LayerNameToIndex(L"UI");
 		camera->GetCamera()->SetCullingMaskLayerOnOff(layerIndex, true); // UI는 안 찍음
 		scene->AddGameObject(camera);
@@ -251,7 +251,7 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 #pragma region Plane
 	{
-		shared_ptr<GameObject> obj = make_shared<GameObject>();
+		/*shared_ptr<GameObject> obj = make_shared<GameObject>();
 		obj->AddComponent(make_shared<Transform>());
 		obj->GetTransform()->SetLocalScale(Vec3(75.f, 1.f, 75.f));
 		obj->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
@@ -267,7 +267,7 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 			meshRenderer->SetMaterial(material);
 		}
 		obj->AddComponent(meshRenderer);
-		scene->AddGameObject(obj);
+		scene->AddGameObject(obj);*/
 	}
 #pragma endregion
 
@@ -308,12 +308,12 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	{
 		shared_ptr<GameObject> light = make_shared<GameObject>();
 		light->AddComponent(make_shared<Transform>());
-		light->GetTransform()->SetLocalPosition(Vec3(50, 500, 300));
+		light->GetTransform()->SetLocalPosition(Vec3(0, 100, 0));
 		light->AddComponent(make_shared<Light>());
-		light->GetLight()->SetLightDirection(Vec3(0.f, -1.f, 1.f));
+		light->GetLight()->SetLightDirection(Vec3(0.f, -1.f, 0.f));
 		light->GetLight()->SetLightType(LIGHT_TYPE::DIRECTIONAL_LIGHT);
-		light->GetLight()->SetDiffuse(Vec3(1.f, 1.f, 1.f));
-		light->GetLight()->SetAmbient(Vec3(0.1f, 0.1f, 0.1f));
+		light->GetLight()->SetDiffuse(Vec3(0.7f, 0.7f, 0.7f));
+		light->GetLight()->SetAmbient(Vec3(0.2f, 0.2f, 0.2f));
 		light->GetLight()->SetSpecular(Vec3(0.2f, 0.2f, 0.2f));
 
 		scene->AddGameObject(light);
@@ -326,8 +326,8 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	PxMaterial* defaultMaterial = gEngine->GetDefaultMaterial();
 #pragma region Hamster
 	{
-		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\forest_mother.fbx");
-		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData", L"..\\Resources\\FBX\\Hamster.meshdata");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster.fbx");
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData", L"..\\Resources\\FBX\\Hamster.meshdata");
 
 		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
 
@@ -335,55 +335,28 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 			gameObject->SetName(L"Hamster");
 			gameObject->SetCheckFrustum(false);
 			gameObject->GetTransform()->SetLocalScale(Vec3(200.f, 200.f, 200.f));
-			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 0.f, 0.f));
-			gameObject->GetTransform()->SetLocalPosition(Vec3(290.215790f, 92.128059f, -181.242050f));
-
-			// PxBoxController Desc 생성
-			/*PxBoxControllerDesc desc;
-			desc.halfHeight = 1.0f;
-			desc.halfSideExtent = 0.5f;
-			desc.halfForwardExtent = 0.5f;
-			desc.material = defaultMaterial;
-			desc.position = PxExtendedVec3(0.0, 1.0, 0.0);*/
+			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 3.2f, 0.f));
+			gameObject->SetStatic(false);
 
 			PxCapsuleControllerDesc desc;
-			desc.height = 100.0f;
+			desc.height = 50.0f;
 			desc.radius = 25.0f;
 			desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
-			desc.position = PxExtendedVec3(290.215790f, 92.128059f, -181.242050f);
+			desc.position = PxExtendedVec3(1447.f, 256.f, -2099.f);
+			desc.material = defaultMaterial;
+			desc.contactOffset = 0.1f; // 땅과의 거리
+			desc.stepOffset = 40.f; // 계단 높이
+			desc.slopeLimit = cosf(PxDegToRad(45.f)); // 경사로
+			desc.invisibleWallHeight = 0.0f; // 벽 높이
+			desc.maxJumpHeight = 0.0f; // 점프 높이
+			desc.reportCallback = nullptr; // PxUserControllerHitReport
+			desc.behaviorCallback = nullptr; // PxControllerBehaviorCallback
+			desc.nonWalkableMode = PxControllerNonWalkableMode::ePREVENT_CLIMBING_AND_FORCE_SLIDING;
 			desc.material = defaultMaterial;
 
 			// PxController 생성
 			PxController* controller = controllerManager->createController(desc);
 			controller->setUpDirection(PxVec3(0.f, 1.f, 0.f));
-
-			// 90도 회전
-			/*float angle = gameObject->GetTransform()->GetLocalRotation().x;
-
-			PxQuat quat(sin(angle / 2), 0.f, 0.f, cos(angle / 2));
-			PxQuat quat2(0.f, 0.f, 0.f, 1.f);
-			PxTransform transform(PxVec3(0.f, 15.f, 0.f), quat);
-
-			PxRigidDynamic* playerActor = physics->createRigidDynamic(transform);
-
-			PxMaterial* defaultMaterial = gEngine->GetDefaultMaterial();
-			PxShape* shape = physics->createShape(PxBoxGeometry(0.5f, 1.f, 0.5f), *defaultMaterial);
-			playerActor->attachShape(*shape);
-			PxRigidBodyExt::updateMassAndInertia(*playerActor, 80.0f);
-
-			playerActor->setCMassLocalPose(PxTransform(PxVec3(0.f, -0.5f, 0.f)));
-			PxRigidBodyExt::setMassAndUpdateInertia(*playerActor , 100.0f);
-			playerActor->setLinearDamping(0.5f);
-			playerActor->setMaxAngularVelocity(1.0f);
-			playerActor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
-
-			defaultScene->addActor(*playerActor);
-			shape->release();*/
-
-			// PhysXComponent 생성 및 추가
-			/*shared_ptr<PhysXComponent> physicsComponent = make_shared<PhysXComponent>(playerActor);
-			physicsComponent.get()->SetPhysicsActor(playerActor);
-			gameObject->AddComponent(physicsComponent);*/
 
 			scene->AddGameObject(gameObject);
 			gameObject->AddComponent(make_shared<TestAnimation>());
@@ -401,9 +374,10 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		for (auto& gameObject : gameObjects) {
 			gameObject->SetName(L"Map");
 			gameObject->SetCheckFrustum(true);
-			gameObject->GetTransform()->SetLocalPosition(Vec3(0.f, 30.f, 0.f));
+			gameObject->SetStatic(true);
+			gameObject->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
 			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
-			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 0.f, 0.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(-XM_PIDIV2, 0.f, 0.f));
 
 			scene->AddGameObject(gameObject);
 			gameObject->AddComponent(make_shared<TestMap>());

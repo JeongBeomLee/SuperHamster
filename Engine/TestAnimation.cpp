@@ -6,6 +6,9 @@
 #include "PhysXComponent.h"
 #include "Timer.h"
 #include "Engine.h"
+#include "SceneManager.h"
+#include "Scene.h"
+#include "GameObject.h"
 
 const float moveForce = 10000.0f;
 const PxVec3 up(0.0f, 1.0f, 0.0f);
@@ -38,62 +41,83 @@ void TestAnimation::Update()
 		animator->Play(index);
 	}
 
-	if (INPUT->GetButtonDown(KEY_TYPE::KEY_3)) {
-		Vec3 Rotation = GetTransform()->GetLocalRotation();
-
-		Rotation.x -= 0.1f;
-
-		GetTransform()->SetLocalRotation(Rotation);
-	}
-
-	// W
-	/*PxRigidDynamic* playerActor = static_pointer_cast<PhysXComponent>(GetPhysXComponent())->GetPhysicsActor()->is<PxRigidDynamic>();
-	if (INPUT->GetButton(KEY_TYPE::W)) {
-		PxVec3 forward = playerActor->getGlobalPose().q.rotate(PxVec3(0.0f, 0.0f, 1.0f));
-		playerActor->addForce(forward * moveForce);
-	}*/
-
-
 	{
 		PxControllerManager* manager = gEngine->GetControllerManager();
 		PxController* playerController = manager->getController(0);
 		PxVec3 disp(0.0f);
 
-		if (INPUT->GetButton(KEY_TYPE::UP)) 
-			disp.z += 1.0f;
-		if (INPUT->GetButton(KEY_TYPE::DOWN)) 
-			disp.z -= 1.0f;
-		if (INPUT->GetButton(KEY_TYPE::LEFT))
-			disp.x -= 1.0f;
+		// 카메라의 회전 정보 가져오기
+		Vec3 cameraRotation = GET_SINGLE(SceneManager)->GetActiveScene()->GetGameObjectByName(L"Main_Camera")->GetTransform()->GetLocalRotation();
+
+		// 카메라 회전을 고려하여 이동 방향 계산
+		float cosX = cos(cameraRotation.x);
+		float sinX = sin(cameraRotation.x);
+		float cosY = cos(cameraRotation.y);
+		float sinY = sin(cameraRotation.y);
+
+		if (INPUT->GetButton(KEY_TYPE::UP))
+		{
+			disp.x += sinY * cosX;
+			disp.y += sinX;
+			disp.z += cosY * cosX;
+		}
+		if (INPUT->GetButton(KEY_TYPE::DOWN))
+		{
+			disp.x -= sinY * cosX;
+			disp.y -= sinX;
+			disp.z -= cosY * cosX;
+		}
 		if (INPUT->GetButton(KEY_TYPE::RIGHT))
-			disp.x += 1.0f;
-
-		if (disp.magnitudeSquared() > 0.0f) {
-			disp.normalize();
-
-			// 캐릭터 컨트롤러 회전
-			PxVec3 forward = PxVec3(0.0f, 0.0f, 1.0f);
-			PxVec3 right = PxVec3(1.0f, 0.0f, 0.0f);
-			PxReal angle = PxAtan2(disp.x, -disp.z);
-			PxQuat rotation(angle, PxVec3(0.0f, 1.0f, 0.0f));
-
-			PxExtendedVec3 currentPosition = playerController->getPosition();
-			PxVec3 currentPositionVec3(float(currentPosition.x), float(currentPosition.y), float(currentPosition.z));
-			PxTransform transform(currentPositionVec3, rotation);
-			PxExtendedVec3 newPosition = PxExtendedVec3(transform.p.x, transform.p.y, transform.p.z);
-			playerController->setPosition(newPosition);
-
-			// 캐릭터 회전
-			Vec3 Rotation = GetTransform()->GetLocalRotation();
-			Rotation.y = -angle;
-			GetTransform()->SetLocalRotation(Rotation);
+		{
+			disp.x += cosY;
+			disp.z -= sinY;
+		}
+		if (INPUT->GetButton(KEY_TYPE::LEFT))
+		{
+			disp.x -= cosY;
+			disp.z += sinY;
 		}
 
+		if (false == disp.isZero()) {
+			if (disp.magnitudeSquared() > 0.0f) {
+				disp.normalize();
+
+				PxReal targetAngle = PxAtan2(-disp.x, -disp.z);
+
+				// 현재 회전 각도와 목표 회전 각도 계산
+				Vec3 currentRotation = GetTransform()->GetLocalRotation();
+				PxReal currentAngle = currentRotation.y;
+
+				// 최소 회전 방향 계산
+				PxReal deltaAngle = targetAngle - currentAngle;
+				if (deltaAngle > PxPi)
+					deltaAngle -= PxTwoPi;
+				else if (deltaAngle < -PxPi)
+					deltaAngle += PxTwoPi;
+
+				// 보간 비율 계산
+				PxReal interpolationFactor = 7.5f * DELTA_TIME;
+
+				// 보간을 이용하여 부드러운 회전 적용
+				PxReal interpolatedAngle = currentAngle + deltaAngle * interpolationFactor;
+
+				// 보간된 각도를 -180도에서 180도 범위로 조정
+				if (interpolatedAngle > PxPi)
+					interpolatedAngle -= PxTwoPi;
+				else if (interpolatedAngle < -PxPi)
+					interpolatedAngle += PxTwoPi;
+
+				Vec3 Rotation = GetTransform()->GetLocalRotation();
+				Rotation.y = interpolatedAngle;
+				GetTransform()->SetLocalRotation(Rotation);
+			}
+		}
+		
 		// 이동 속도 설정
 		disp *= 550.0f * DELTA_TIME;
 
 		// 중력 적용
-		disp.y -= 20.8f * DELTA_TIME;
+		disp.y -= 20.8f * DELTA_TIME * 78.4f;
 
 		// 캐릭터 컨트롤러 이동
 		PxControllerFilters filters;
@@ -102,16 +126,16 @@ void TestAnimation::Update()
 		// 캐릭터 이동
 		Vec3 Position = GetTransform()->GetLocalPosition();
 		Position.x = playerController->getPosition().x;
-		Position.y = playerController->getPosition().y;
+		Position.y = playerController->getPosition().y - 50.f;
 		Position.z = playerController->getPosition().z;
-		GetTransform()->SetLocalPosition(Position);
 
-		cameraPos->x = GetTransform()->GetLocalPosition().x;
-		cameraPos->y = GetTransform()->GetLocalPosition().y;
-		cameraPos->z = GetTransform()->GetLocalPosition().z;
+		cameraPos->x = Position.x;
+		cameraPos->y = Position.y;
+		cameraPos->z = Position.z;
 
 		cameraRot->x = GetTransform()->GetLocalRotation().x;
 		cameraRot->y = GetTransform()->GetLocalRotation().y;
 		cameraRot->z = GetTransform()->GetLocalRotation().z;
+		GetTransform()->SetLocalPosition(Position);
 	}
 }
