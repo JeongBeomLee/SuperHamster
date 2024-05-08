@@ -16,12 +16,13 @@
 #include "Terrain.h"
 #include "SphereCollider.h"
 #include "MeshData.h"
-#include "TestAnimation.h"
+#include "PlayerScript.h"
 #include "PhysXComponent.h"
 #include "Timer.h"
 #include "TestMap.h"
 #include "Mesh.h"
 #include "FBXLoader.h"
+#include "TestAnimation.h"
 
 void SceneManager::Update()
 {
@@ -232,44 +233,6 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	}
 #pragma endregion
 
-#pragma region Terrain
-	{
-		/*shared_ptr<GameObject> obj = make_shared<GameObject>();
-		obj->AddComponent(make_shared<Transform>());
-		obj->AddComponent(make_shared<Terrain>());
-		obj->AddComponent(make_shared<MeshRenderer>());
-
-		obj->GetTransform()->SetLocalScale(Vec3(10.f, 50.f, 10.f));
-		obj->GetTransform()->SetLocalPosition(Vec3(-200.f, 0.f, -100.f));
-		obj->SetStatic(true);
-		obj->GetTerrain()->Init(64, 64);
-		obj->SetCheckFrustum(false);
-
-		scene->AddGameObject(obj);*/
-	}
-#pragma endregion
-
-#pragma region Plane
-	{
-		/*shared_ptr<GameObject> obj = make_shared<GameObject>();
-		obj->AddComponent(make_shared<Transform>());
-		obj->GetTransform()->SetLocalScale(Vec3(75.f, 1.f, 75.f));
-		obj->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
-		obj->SetStatic(true);
-		shared_ptr<MeshRenderer> meshRenderer = make_shared<MeshRenderer>();
-		{
-			shared_ptr<Mesh> mesh = GET_SINGLE(Resources)->LoadCubeMesh();
-			meshRenderer->SetMesh(mesh);
-		}
-		{
-			shared_ptr<Material> material = GET_SINGLE(Resources)->Get<Material>(L"Ground")->Clone();
-			material->SetInt(0, 0);
-			meshRenderer->SetMaterial(material);
-		}
-		obj->AddComponent(meshRenderer);
-		scene->AddGameObject(obj);*/
-	}
-#pragma endregion
 
 #pragma region UI_Test
 	for (int32 i = 0; i < 6; i++) {
@@ -326,8 +289,8 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	PxMaterial* defaultMaterial = gEngine->GetDefaultMaterial();
 #pragma region Hamster
 	{
-		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster.fbx");
-		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData", L"..\\Resources\\FBX\\Hamster.meshdata");
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData", L"..\\Resources\\FBX\\Hamster.meshdata");
 
 		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
 
@@ -359,14 +322,15 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 			controller->setUpDirection(PxVec3(0.f, 1.f, 0.f));
 
 			scene->AddGameObject(gameObject);
-			gameObject->AddComponent(make_shared<TestAnimation>());
+			gameObject->AddComponent(make_shared<PlayerScript>());
 		}
 	}
 #pragma endregion
 
+
 #pragma region Map
 	{
-		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Tutorial.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage2.fbx");
 		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"MapMeshData", L"..\\Resources\\FBX\\Hamster.meshdata");
 
 		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
@@ -381,7 +345,6 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 			scene->AddGameObject(gameObject);
 			gameObject->AddComponent(make_shared<TestMap>());
-		
 		}
 
 		FbxMeshInfo* meshInfo = meshData->GetMesh(0)->GetFbxMeshInfo();
@@ -444,6 +407,133 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		triangleMeshShape->release();
 	}
 #pragma endregion
+
+	{
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage1_Mimic.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage1_Mimic", L"..\\Resources\\FBX\\Stage1_Mimic.meshdata");
+
+		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
+
+		for (auto& gameObject : gameObjects) {
+			gameObject->SetName(L"Stage1_Mimic");
+			gameObject->SetCheckFrustum(true);
+			gameObject->GetTransform()->SetLocalPosition(Vec3(-2054.f, 4.f, -1173.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(100.f, 100.f, 100.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, -1.1f, 0.f));
+
+			scene->AddGameObject(gameObject);
+			gameObject->AddComponent(make_shared<TestAnimation>());
+		}
+	}
+
+	{
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage1_SkeletonBird.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage1_SkeletonBird", L"..\\Resources\\FBX\\Stage1_SkeletonBird.meshdata");
+
+		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
+
+		for (auto& gameObject : gameObjects) {
+			gameObject->SetName(L"Stage1_SkeletonBird");
+			gameObject->SetCheckFrustum(true);
+			gameObject->GetTransform()->SetLocalPosition(Vec3(-1881.f, 5.7f, -1005.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, -0.3f, 0.f));
+
+			scene->AddGameObject(gameObject);
+			//gameObject->AddComponent(make_shared<TestAnimation>());
+		}
+	}
+
+	{
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage2_Haunt.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage2_Haunt", L"..\\Resources\\FBX\\Stage2_Haunt.meshdata");
+
+		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
+
+		for (auto& gameObject : gameObjects) {
+			gameObject->SetName(L"Stage2_Haunt");
+			gameObject->SetCheckFrustum(true);
+			gameObject->GetTransform()->SetLocalPosition(Vec3(-1733.6f, 5.7f, -993.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, -0.01f, 0.f));
+
+			scene->AddGameObject(gameObject);
+			//gameObject->AddComponent(make_shared<TestAnimation>());
+		}
+	}
+
+	{
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage2_TelepachyRat.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage2_TelepachyRat", L"..\\Resources\\FBX\\Stage2_TelepachyRat.meshdata");
+
+		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
+
+		for (auto& gameObject : gameObjects) {
+			gameObject->SetName(L"Stage2_TelepachyRat");
+			gameObject->SetCheckFrustum(true);
+			gameObject->GetTransform()->SetLocalPosition(Vec3(-1617.f, 5.6f, -1019.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, -0.024f, 0.f));
+
+			scene->AddGameObject(gameObject);
+			//gameObject->AddComponent(make_shared<TestAnimation>());
+		}
+	}
+
+	{
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage3_Alien_Plant.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage3_Alien_Plant", L"..\\Resources\\FBX\\Stage3_Alien_Plant.meshdata");
+
+		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
+
+		for (auto& gameObject : gameObjects) {
+			gameObject->SetName(L"Stage3_Alien_Plant");
+			gameObject->SetCheckFrustum(true);
+			gameObject->GetTransform()->SetLocalPosition(Vec3(-1506.f, 5.56f, -1171.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 0.382f, 0.f));
+
+			scene->AddGameObject(gameObject);
+			//gameObject->AddComponent(make_shared<TestAnimation>());
+		}
+	}
+
+	{
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage3_EPlant.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage3_EPlant", L"..\\Resources\\FBX\\Stage3_EPlant.meshdata");
+
+		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
+
+		for (auto& gameObject : gameObjects) {
+			gameObject->SetName(L"Stage3_EPlant");
+			gameObject->SetCheckFrustum(true);
+			gameObject->GetTransform()->SetLocalPosition(Vec3(-1443.f, 5.4f, -1299.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 0.879f, 0.f));
+
+			scene->AddGameObject(gameObject);
+			//gameObject->AddComponent(make_shared<TestAnimation>());
+		}
+	}
+
+	{
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage4_Metal Robot.fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage4_Metal Robot", L"..\\Resources\\FBX\\Stage4_Metal Robot.meshdata");
+
+		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
+
+		for (auto& gameObject : gameObjects) {
+			gameObject->SetName(L"Stage4_Metal Robot");
+			gameObject->SetCheckFrustum(true);
+			gameObject->GetTransform()->SetLocalPosition(Vec3(-1451.6f, 4.879f, -1452.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 1.5f, 0.f));
+
+			scene->AddGameObject(gameObject);
+			//gameObject->AddComponent(make_shared<TestAnimation>());
+		}
+	}
+
 
 	return scene;	
 }

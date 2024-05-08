@@ -208,8 +208,9 @@
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="TableDescriptorHeap.h" />
     <ClInclude Include="Terrain.h" />
-    <ClInclude Include="TestCameraScript.h" />
     <ClInclude Include="TestAnimation.h" />
+    <ClInclude Include="TestCameraScript.h" />
+    <ClInclude Include="PlayerScript.h" />
     <ClInclude Include="TestMap.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Timer.h" />
@@ -259,8 +260,9 @@
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="TableDescriptorHeap.cpp" />
     <ClCompile Include="Terrain.cpp" />
-    <ClCompile Include="TestCameraScript.cpp" />
     <ClCompile Include="TestAnimation.cpp" />
+    <ClCompile Include="TestCameraScript.cpp" />
+    <ClCompile Include="PlayerScript.cpp" />
     <ClCompile Include="TestMap.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Timer.cpp" />

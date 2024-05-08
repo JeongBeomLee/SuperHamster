@@ -34,7 +34,6 @@ void Animator::FinalUpdate()
 	_nextFrame = min(_frame + 1, animClip.frameCount - 1);
 	_frameRatio = static_cast<float>(_frame - _frame);
 
-	// For blending
 	const int32 prevRatio = static_cast<int32>(prevAnimClip.frameCount / prevAnimClip.duration);
 	_prevFrame = static_cast<int32>(_updateTime * prevRatio);
 	_prevFrame = min(_prevFrame, prevAnimClip.frameCount - 1);
@@ -89,3 +88,27 @@ void Animator::Play(uint32 idx)
 	_blendingUpdateTime = 0.f;
 	_blendingRatio = 0.f;
 }
+
+bool Animator::IsAnimationFinished(uint32 idx) const
+{
+	assert(idx < _animClips->size());
+
+	if (idx == ROLL)
+	{
+		return _updateTime >= _animClips->at(idx).duration - 0.1f;
+	}
+
+	if (idx == _clipIndex) {
+		return _updateTime >= _animClips->at(idx).duration;
+	}
+	else {
+		float updateTime = 0.0f;
+		const int32 ratio = static_cast<int32>(_animClips->at(idx).frameCount / _animClips->at(idx).duration);
+		int32 frame = static_cast<int32>(updateTime * ratio);
+		frame = min(frame, _animClips->at(idx).frameCount - 1);
+
+		return frame >= _animClips->at(idx).frameCount - 1;
+	}
+}
+
+

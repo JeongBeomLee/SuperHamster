@@ -56,3 +56,8 @@ Vec3 Slerp(Vec3& start, Vec3& end, float t)
     // 선형 보간 결과 반환
     return start * startWeight + end * endWeight;
 }
+
+float SineEaseInOut(float t)
+{
+    return 0.5f * (1.0f - cos(3.141592f * t));
+}

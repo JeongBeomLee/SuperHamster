@@ -85,6 +85,24 @@ using Vec3		= DirectX::SimpleMath::Vector3;
 using Vec4		= DirectX::SimpleMath::Vector4;
 using Matrix	= DirectX::SimpleMath::Matrix;
 
+enum PLAYER_STATE
+{
+	CLIMB,
+	FALLING,
+	FALL_DOWN,
+	FIRE,
+	GETUP,
+	IDLE,
+	HIT,
+	RUN_SLOW,
+	RUN_FAST,
+	ROLL,
+	WALK,
+	AIM,
+
+	END,
+};
+
 enum class CBV_REGISTER : uint8
 {
 	b0,
@@ -210,3 +228,4 @@ extern unique_ptr<Vec3> cameraRot;
 wstring s2ws(const string& s);
 string ws2s(const wstring& s);
 Vec3 Slerp(Vec3& start, Vec3& end, float t);
+float SineEaseInOut(float t);

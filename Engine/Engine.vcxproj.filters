@@ -150,7 +150,7 @@
     <ClCompile Include="Animator.cpp">
       <Filter>Object\Component</Filter>
     </ClCompile>
-    <ClCompile Include="TestAnimation.cpp">
+    <ClCompile Include="PlayerScript.cpp">
       <Filter>Object\Test</Filter>
     </ClCompile>
     <ClCompile Include="CommandQueue.cpp">
@@ -181,6 +181,9 @@
       <Filter>Object\Component</Filter>
     </ClCompile>
     <ClCompile Include="TestMap.cpp">
+      <Filter>Object\Test</Filter>
+    </ClCompile>
+    <ClCompile Include="TestAnimation.cpp">
       <Filter>Object\Test</Filter>
     </ClCompile>
   </ItemGroup>
@@ -287,7 +290,7 @@
     <ClInclude Include="Animator.h">
       <Filter>Object\Component</Filter>
     </ClInclude>
-    <ClInclude Include="TestAnimation.h">
+    <ClInclude Include="PlayerScript.h">
       <Filter>Object\Test</Filter>
     </ClInclude>
     <ClInclude Include="CommandQueue.h">
@@ -318,6 +321,9 @@
       <Filter>Object\Component</Filter>
     </ClInclude>
     <ClInclude Include="TestMap.h">
+      <Filter>Object\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="TestAnimation.h">
       <Filter>Object\Test</Filter>
     </ClInclude>
   </ItemGroup>
