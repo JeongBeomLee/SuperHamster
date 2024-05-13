@@ -41,10 +41,6 @@ shared_ptr<MeshData> MeshData::LoadFromFBX(const wstring& path)
 		info.mesh = mesh;
 		info.materials = materials;
 
-		// 트랜스폼 정보 추가
-		info.transform = loader.GetMesh(i).transform;
-		info.globalTransform = loader.GetMesh(i).globalTransform;
-
 		meshData->_meshRenders.push_back(info);
 	}
 

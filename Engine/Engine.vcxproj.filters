@@ -177,9 +177,6 @@
     <ClCompile Include="DDSTextureLoader12.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="PhysXComponent.cpp">
-      <Filter>Object\Component</Filter>
-    </ClCompile>
     <ClCompile Include="TestMap.cpp">
       <Filter>Object\Test</Filter>
     </ClCompile>
@@ -316,9 +313,6 @@
     </ClInclude>
     <ClInclude Include="DDSTextureLoader12.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="PhysXComponent.h">
-      <Filter>Object\Component</Filter>
     </ClInclude>
     <ClInclude Include="TestMap.h">
       <Filter>Object\Test</Filter>

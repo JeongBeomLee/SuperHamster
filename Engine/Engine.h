@@ -16,7 +16,6 @@ class Engine
 public:
 	void Init(const WindowInfo& info);
 	void Update();
-	void Release();
 
 public:
 	const WindowInfo&					GetWindow()										{ return window; }
@@ -31,12 +30,6 @@ public:
 	shared_ptr<ConstantBuffer>			GetConstantBuffer(CONSTANT_BUFFER_TYPE type)	{ return constantBuffers[static_cast<uint8>(type)]; }
 	shared_ptr<RenderTargetGroup>		GetRTGroup(RENDER_TARGET_GROUP_TYPE type)		{ return renderTargetGroups[static_cast<uint8>(type)]; }
 
-	PxPhysics*							GetPhysics()									{ return pxPhysics; }
-	PxMaterial*							GetDefaultMaterial()							{ return pxDefaultMaterial; }
-	PxScene*							GetDefaultScene()								{ return pxDefaultScene; }
-	PxPvdSceneClient*					GetPvdScene()									{ return pxPvdScene; }
-	PxControllerManager*				GetControllerManager()							{ return pxControllerManager; }
-
 public:
 	void Render();
 	void RenderBegin();
@@ -48,7 +41,6 @@ private:
 	void ShowFps();
 	void CreateConstantBuffer(CBV_REGISTER reg, uint32 bufferSize, uint32 count);
 	void CreateRenderTargetGroups();
-	void InitPhysX();
 
 private:
 	WindowInfo		window;
@@ -62,17 +54,6 @@ private:
 	shared_ptr<RootSignature>			rootSignature			= make_shared<RootSignature>();
 	shared_ptr<GraphicsDescriptorHeap>	graphicsDescriptorHeap	= make_shared<GraphicsDescriptorHeap>();
 	shared_ptr<ComputeDescriptorHeap>	computeDescriptorHeap	= make_shared<ComputeDescriptorHeap>();
-
-	PxDefaultAllocator			allocator;
-	PxDefaultErrorCallback		errorCallback;
-	PxFoundation*				pxFoundation		= nullptr;
-	PxPhysics*					pxPhysics			= nullptr;
-	PxPvd*						pxPvd				= nullptr;	// 디버그용
-	PxPvdSceneClient*			pxPvdScene			= nullptr;	// 디버그용
-	PxDefaultCpuDispatcher*		pxCpuDispatcher		= nullptr;
-	PxScene*					pxDefaultScene		= nullptr;
-	PxMaterial*					pxDefaultMaterial	= nullptr;
-	PxControllerManager*		pxControllerManager	= nullptr;
 
 	vector<shared_ptr<ConstantBuffer>>	constantBuffers;
 	array<shared_ptr<RenderTargetGroup>, RENDER_TARGET_GROUP_COUNT> renderTargetGroups;

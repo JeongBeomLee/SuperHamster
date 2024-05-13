@@ -16,5 +16,4 @@ void Game::Update()
 
 void Game::Release()
 {
-	gEngine->Release();
 }

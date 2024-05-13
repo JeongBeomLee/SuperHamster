@@ -21,8 +21,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPWSTR    lpCmdLine,
                      _In_ int       nCmdShow)
 {
-    UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
+    AllocConsole();
+    freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);
+    freopen_s((FILE**)stdin, "CONIN$", "r", stdin);
+    std::wcout.imbue(std::locale("korean"));
 
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_CLIENT, szWindowClass, MAX_LOADSTRING);
@@ -39,8 +41,45 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     gWindowInfo.height      = 730;
     gWindowInfo.windowed    = true;
 
+    // 게임 초기화
     unique_ptr<Game> game = make_unique<Game>();
     game->Init(gWindowInfo);
+
+    // 서버 초기화
+    int retval;
+    char SERVER_ADDR[16] = "127.0.0.1";
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+        return 1;
+
+    serverSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, nullptr, 0, WSA_FLAG_OVERLAPPED);
+    if (serverSocket == INVALID_SOCKET) {
+        error_display("socket()", WSAGetLastError());
+        return 1;
+    }
+
+    // 소켓을 Non-Blocking 모드로 설정
+    unsigned long mode = 1;
+    retval = ioctlsocket(serverSocket, FIONBIO, &mode);
+    if (retval == SOCKET_ERROR) {
+        error_display("ioctlsocket()", WSAGetLastError());
+        return 1;
+    }
+
+    SOCKADDR_IN serveraddr;
+    memset(&serveraddr, 0, sizeof(serveraddr));
+    serveraddr.sin_family = AF_INET;
+    inet_pton(AF_INET, SERVER_ADDR, &serveraddr.sin_addr);
+    serveraddr.sin_port = htons(PORT);
+    retval = connect(serverSocket, (SOCKADDR*)&serveraddr, sizeof(serveraddr));
+    if (retval == SOCKET_ERROR) {
+        if (WSAGetLastError() != WSAEWOULDBLOCK) {
+			error_display("connect()", WSAGetLastError());
+			return 1;
+        }
+    }
+    char net_buf[BUF_SIZE];
+    bool init = false;
 
     while (true) {
         if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
@@ -53,12 +92,36 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			}
         }
 
-		// TODO
+        if (false == init) {
+            CS_LOGIN_PACKET p;
+            p.size = sizeof(p);
+            p.type = CS_LOGIN;
+            send_packet(&p);
+            init = true;
+		}
+        
+		// 데이터 수신
+        retval = recv(serverSocket, net_buf, BUF_SIZE, 0);
+        if (retval == SOCKET_ERROR) {
+            if (WSAGetLastError() != WSAEWOULDBLOCK) {
+				error_display("recv()", WSAGetLastError());
+				return 1;
+			}
+		}
+        else if (retval == 0) {
+			std::cout << "Server Disconnected" << std::endl;
+			break;
+		}
+        else {
+			process_data(net_buf, retval);
+		}
+
         game->Update();
     }
     
     game->Release();
-
+    closesocket(serverSocket);
+    WSACleanup();
     return (int) msg.wParam;
 }
 

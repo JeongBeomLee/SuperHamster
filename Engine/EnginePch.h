@@ -4,6 +4,10 @@
 #define _HAS_STD_BYTE 0
 
 // 각종 include
+#include <WS2tcpip.h>
+#pragma comment(lib, "WS2_32.lib")
+#pragma comment(lib, "MSWSock.lib")
+
 #include <windows.h>
 #include <tchar.h>
 #include <memory>
@@ -34,12 +38,11 @@ namespace fs = std::filesystem;
 #include "SimpleMath.h"
 #include "DDSTextureLoader12.h"
 #include "FBX/fbxsdk.h"
-#include "PxPhysicsAPI.h"
+#include "../Server/protocol.h"
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 using namespace Microsoft::WRL;
-using namespace physx;
 
 // 각종 lib
 #pragma comment(lib, "d3d12")
@@ -62,14 +65,6 @@ using namespace physx;
 #pragma comment(lib, "FBX\\release\libxml2-md.lib")
 #pragma comment(lib, "FBX\\release\\zlib-md.lib")
 #endif
-
-#pragma comment(lib, "PhysX_64.lib")
-#pragma comment(lib, "PhysXCommon_64.lib")
-#pragma comment(lib, "PhysXFoundation_64.lib")
-#pragma comment(lib, "PhysXExtensions_static_64.lib")
-#pragma comment(lib, "PhysXPvdSDK_static_64.lib")
-#pragma comment(lib, "PhysXCharacterKinematic_static_64.lib")
-#pragma comment(lib, "PhysXCooking_64.lib")
 
 // 각종 typedef
 using int8		= __int8;
@@ -223,9 +218,16 @@ struct AnimFrameParams
 extern unique_ptr<class Engine> gEngine;
 extern unique_ptr<Vec3> cameraPos;
 extern unique_ptr<Vec3> cameraRot;
+extern SOCKET serverSocket;
+extern int g_myid;
+extern int g_otherid;
 
 // Utils
 wstring s2ws(const string& s);
 string ws2s(const wstring& s);
 Vec3 Slerp(Vec3& start, Vec3& end, float t);
 float SineEaseInOut(float t);
+void error_display(const char* msg, int err_no);
+void send_packet(void* packet);
+void process_data(char* net_buf, size_t io_byte);
+void ProcessPacket(char* ptr);

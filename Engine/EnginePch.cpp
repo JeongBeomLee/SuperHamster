@@ -2,10 +2,20 @@
 #include "EnginePch.h"
 #include "Engine.h"
 
+#include "SceneManager.h"
+#include "Scene.h"
+#include "GameObject.h"
+#include "Transform.h"
+#include "Resources.h"
+#include "MeshData.h"
+#include "PlayerScript.h"
+
 unique_ptr<Engine> gEngine = make_unique<Engine>();
 unique_ptr<Vec3> cameraPos = make_unique<Vec3>();
 unique_ptr<Vec3> cameraRot = make_unique<Vec3>();
-
+SOCKET serverSocket = INVALID_SOCKET;
+int g_myid = -1;
+int g_otherid = -1;
 
 wstring s2ws(const string& s)
 {
@@ -60,4 +70,172 @@ Vec3 Slerp(Vec3& start, Vec3& end, float t)
 float SineEaseInOut(float t)
 {
     return 0.5f * (1.0f - cos(3.141592f * t));
+}
+
+void error_display(const char* msg, int err_no)
+{
+	WCHAR* lpMsgBuf;
+	FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		FORMAT_MESSAGE_FROM_SYSTEM,
+		NULL, err_no,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&lpMsgBuf, 0, NULL);
+	std::cout << msg;
+	std::wcout << L" 에러 " << lpMsgBuf << std::endl;
+	while (true); // 디버깅 용
+	LocalFree(lpMsgBuf);
+}
+
+void send_packet(void* packet)
+{
+	unsigned char* p = reinterpret_cast<unsigned char*>(packet);
+	int retval = send(serverSocket, reinterpret_cast<char*>(p), p[0], 0);
+	if (retval == SOCKET_ERROR) {
+		if (WSAGetLastError() != WSAEWOULDBLOCK) {
+			error_display("send()", WSAGetLastError());
+			return;
+		}
+	}
+}
+
+void process_data(char* net_buf, size_t io_byte)
+{
+    char* ptr = net_buf;
+    static size_t in_packet_size = 0;
+    static size_t saved_packet_size = 0;
+    static char packet_buffer[BUF_SIZE];
+
+    while (0 != io_byte) {
+        if (0 == in_packet_size) in_packet_size = ptr[0];
+        if (io_byte + saved_packet_size >= in_packet_size) {
+            memcpy(packet_buffer + saved_packet_size, ptr, in_packet_size - saved_packet_size);
+            ProcessPacket(packet_buffer);
+            ptr += in_packet_size - saved_packet_size;
+            io_byte -= in_packet_size - saved_packet_size;
+            in_packet_size = 0;
+            saved_packet_size = 0;
+        }
+        else {
+            memcpy(packet_buffer + saved_packet_size, ptr, io_byte);
+            saved_packet_size += io_byte;
+            io_byte = 0;
+        }
+    }
+}
+
+void ProcessPacket(char* ptr)
+{
+    static bool first_time = true;
+    switch (ptr[1])
+    {
+    case SC_LOGIN_INFO:
+    {
+		SC_LOGIN_INFO_PACKET* packet = reinterpret_cast<SC_LOGIN_INFO_PACKET*>(ptr);
+		g_myid = packet->id;
+
+		Scene* scene = GET_SINGLE(SceneManager)->GetActiveScene().get();
+		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster" + to_wstring(g_myid) + L".fbx");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData", L"..\\Resources\\FBX\\Hamster" + to_wstring(g_myid) + L".meshdata");
+
+		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
+
+		for (auto& gameObject : gameObjects) {
+			gameObject->SetName(L"Hamster" + to_wstring(g_myid));
+			gameObject->SetCheckFrustum(false);
+			gameObject->GetTransform()->SetLocalPosition(packet->pos);
+			gameObject->GetTransform()->SetLocalScale(packet->scale);
+			gameObject->GetTransform()->SetLocalRotation(packet->dir);
+			gameObject->SetStatic(false);
+
+			scene->AddGameObject(gameObject);
+			gameObject->AddComponent(make_shared<PlayerScript>());
+		}
+    }
+    break;
+
+    case SC_ADD_PLAYER:
+    {
+        SC_ADD_PLAYER_PACKET* packet = reinterpret_cast<SC_ADD_PLAYER_PACKET*>(ptr);
+        int id = packet->id;
+
+        if (id != g_myid) {
+            Scene* scene = GET_SINGLE(SceneManager)->GetActiveScene().get();
+            //shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster" + to_wstring(id) + L".fbx");
+            shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData2", L"..\\Resources\\FBX\\Hamster" + to_wstring(id) + L".meshdata");
+
+            vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
+
+            for (auto& gameObject : gameObjects) {
+                gameObject->SetName(L"Hamster" + to_wstring(id));
+                gameObject->SetCheckFrustum(false);
+                gameObject->GetTransform()->SetLocalPosition(packet->pos);
+                gameObject->GetTransform()->SetLocalScale(packet->scale);
+                gameObject->GetTransform()->SetLocalRotation(packet->dir);
+                gameObject->SetStatic(false);
+
+                scene->AddGameObject(gameObject);
+                gameObject->AddComponent(make_shared<PlayerScript2>());
+            }
+        }
+        //else if (id < MAX_USER) {
+        //   players[id] = OBJECT{ *pieces, 0, 0, 64, 64 };
+        //   players[id].move(my_packet->x, my_packet->y);
+        //   players[id].set_name(my_packet->name);
+        //   players[id].show();
+        //}
+        //else {
+        //   //npc[id - NPC_START].x = my_packet->x;
+        //   //npc[id - NPC_START].y = my_packet->y;
+        //   //npc[id - NPC_START].attr |= BOB_ATTR_VISIBLE;
+        //}
+        break;
+    }
+    case SC_MOVE_PLAYER:
+    {
+        SC_MOVE_PLAYER_PACKET* my_packet = reinterpret_cast<SC_MOVE_PLAYER_PACKET*>(ptr);
+        int other_id = my_packet->id;
+
+        GameObject* gameObject = GET_SINGLE(SceneManager)->GetActiveScene()->GetGameObjectByName(L"Hamster" + to_wstring(other_id)).get();
+        if (gameObject == nullptr) 
+            return;
+
+        gameObject->GetTransform()->SetLocalPosition(my_packet->pos);
+        gameObject->GetTransform()->SetLocalRotation(my_packet->dir);
+        gameObject->GetTransform()->SetLocalScale(my_packet->scale);
+
+        if (other_id == g_myid) {
+            PlayerScript* playerScript = reinterpret_cast<PlayerScript*>(gameObject->GetScript().get());
+            playerScript->SetVelocity(my_packet->velocity);
+            playerScript->SetState(static_cast<PLAYER_STATE>(my_packet->state));
+        }
+        else {
+            PlayerScript2* playerScript = reinterpret_cast<PlayerScript2*>(gameObject->GetScript().get());
+            playerScript->SetVelocity(my_packet->velocity);
+            playerScript->SetState(static_cast<PLAYER_STATE>(my_packet->state));
+        }
+        break;
+    }
+
+    case SC_REMOVE_PLAYER:
+    {
+        SC_REMOVE_PLAYER_PACKET* my_packet = reinterpret_cast<SC_REMOVE_PLAYER_PACKET*>(ptr);
+        int other_id = my_packet->id;
+        /*if (other_id == g_myid) {
+            avatar.hide();
+        }
+        else {
+            players.erase(other_id);
+        }*/
+        //else if (other_id < MAX_USER) {
+        //   players.erase(other_id);
+        //}
+        //else {
+        //   //      npc[other_id - NPC_START].attr &= ~BOB_ATTR_VISIBLE;
+        //}
+        break;
+    }
+    default:
+        printf("Unknown PACKET type [%d]\n", ptr[1]);
+    }
 }

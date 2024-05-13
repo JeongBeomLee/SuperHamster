@@ -21,7 +21,10 @@ void TestCameraScript::LateUpdate()
 	/*shared_ptr<GameObject> player = GET_SINGLE(SceneManager)->GetActiveScene()->GetGameObjectByName(L"Hamster");
 	Vec3 playerPos = player->GetTransform()->GetLocalPosition();*/
 
-	shared_ptr<GameObject> player = GET_SINGLE(SceneManager)->GetActiveScene()->GetGameObjectByName(L"Hamster");
+	shared_ptr<GameObject> player = GET_SINGLE(SceneManager)->GetActiveScene()->GetGameObjectByName(L"Hamster" + to_wstring(g_myid));
+
+	if (player == nullptr)
+		return;
 
 	Vec3 playerPos = player->GetTransform()->GetLocalPosition();
 
@@ -38,7 +41,7 @@ void TestCameraScript::LateUpdate()
 
 	Vec3 pos = GetTransform()->GetLocalPosition();
 
-	if (INPUT->GetButton(KEY_TYPE::W))
+	/*if (INPUT->GetButton(KEY_TYPE::W))
 		m_RotationX += 1.f;
 
 	if (INPUT->GetButton(KEY_TYPE::S))
@@ -80,7 +83,7 @@ void TestCameraScript::LateUpdate()
 	{
 		const POINT& pos = INPUT->GetMousePos();
 		GET_SINGLE(SceneManager)->Pick(pos.x, pos.y);
-	}
+	}*/
 
 	/*cameraPos->x = pos.x;
 	cameraPos->y = pos.y;

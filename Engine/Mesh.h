@@ -90,7 +90,6 @@ private:
 	shared_ptr<StructuredBuffer>			_offsetBuffer;	// 각 뼈의 offset 행렬
 	vector<shared_ptr<StructuredBuffer>>	_frameBuffer;	// 전체 본 프레임 정보
 
-	vector<Transform>						_transforms;
 	FbxMeshInfo								_fbxMeshInfo;
 };
 

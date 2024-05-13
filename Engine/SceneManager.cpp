@@ -17,7 +17,6 @@
 #include "SphereCollider.h"
 #include "MeshData.h"
 #include "PlayerScript.h"
-#include "PhysXComponent.h"
 #include "Timer.h"
 #include "TestMap.h"
 #include "Mesh.h"
@@ -31,14 +30,7 @@ void SceneManager::Update()
 
 	activeScene->Update();
 	activeScene->LateUpdate();
-	PhysicsUpdate();
 	activeScene->FinalUpdate();
-}
-
-void SceneManager::PhysicsUpdate()
-{
-	gEngine->GetDefaultScene()->simulate(DELTA_TIME);
-	gEngine->GetDefaultScene()->fetchResults(true);
 }
 
 // TEMP
@@ -271,62 +263,17 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	{
 		shared_ptr<GameObject> light = make_shared<GameObject>();
 		light->AddComponent(make_shared<Transform>());
-		light->GetTransform()->SetLocalPosition(Vec3(0, 100, 0));
 		light->AddComponent(make_shared<Light>());
-		light->GetLight()->SetLightDirection(Vec3(0.f, -1.f, 0.f));
+		light->GetTransform()->SetLocalPosition(Vec3(0.f, 1300.f, -100.f));
+		light->GetLight()->SetLightDirection(Vec3(0.f, -1.f, 1.f));
 		light->GetLight()->SetLightType(LIGHT_TYPE::DIRECTIONAL_LIGHT);
-		light->GetLight()->SetDiffuse(Vec3(0.7f, 0.7f, 0.7f));
-		light->GetLight()->SetAmbient(Vec3(0.2f, 0.2f, 0.2f));
+		light->GetLight()->SetDiffuse(Vec3(1.f, 1.f, 1.f));
+		light->GetLight()->SetAmbient(Vec3(0.1f, 0.1f, 0.1f));
 		light->GetLight()->SetSpecular(Vec3(0.2f, 0.2f, 0.2f));
 
 		scene->AddGameObject(light);
 	}
 #pragma endregion
-
-	PxPhysics* physics = gEngine->GetPhysics();
-	PxScene* defaultScene = gEngine->GetDefaultScene();
-	PxControllerManager* controllerManager = gEngine->GetControllerManager();
-	PxMaterial* defaultMaterial = gEngine->GetDefaultMaterial();
-#pragma region Hamster
-	{
-		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster.fbx");
-		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData", L"..\\Resources\\FBX\\Hamster.meshdata");
-
-		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
-
-		for (auto& gameObject : gameObjects) {
-			gameObject->SetName(L"Hamster");
-			gameObject->SetCheckFrustum(false);
-			gameObject->GetTransform()->SetLocalScale(Vec3(200.f, 200.f, 200.f));
-			gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 3.2f, 0.f));
-			gameObject->SetStatic(false);
-
-			PxCapsuleControllerDesc desc;
-			desc.height = 50.0f;
-			desc.radius = 25.0f;
-			desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
-			desc.position = PxExtendedVec3(1447.f, 256.f, -2099.f);
-			desc.material = defaultMaterial;
-			desc.contactOffset = 0.1f; // 땅과의 거리
-			desc.stepOffset = 40.f; // 계단 높이
-			desc.slopeLimit = cosf(PxDegToRad(45.f)); // 경사로
-			desc.invisibleWallHeight = 0.0f; // 벽 높이
-			desc.maxJumpHeight = 0.0f; // 점프 높이
-			desc.reportCallback = nullptr; // PxUserControllerHitReport
-			desc.behaviorCallback = nullptr; // PxControllerBehaviorCallback
-			desc.nonWalkableMode = PxControllerNonWalkableMode::ePREVENT_CLIMBING_AND_FORCE_SLIDING;
-			desc.material = defaultMaterial;
-
-			// PxController 생성
-			PxController* controller = controllerManager->createController(desc);
-			controller->setUpDirection(PxVec3(0.f, 1.f, 0.f));
-
-			scene->AddGameObject(gameObject);
-			gameObject->AddComponent(make_shared<PlayerScript>());
-		}
-	}
-#pragma endregion
-
 
 #pragma region Map
 	{
@@ -337,8 +284,8 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 		for (auto& gameObject : gameObjects) {
 			gameObject->SetName(L"Map");
-			gameObject->SetCheckFrustum(true);
-			gameObject->SetStatic(true);
+			gameObject->SetCheckFrustum(false);
+			gameObject->SetStatic(false);
 			gameObject->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
 			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
 			gameObject->GetTransform()->SetLocalRotation(Vec3(-XM_PIDIV2, 0.f, 0.f));
@@ -349,190 +296,64 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 		FbxMeshInfo* meshInfo = meshData->GetMesh(0)->GetFbxMeshInfo();
 
-		vector<PxVec3> physxVertices;
-		physxVertices.reserve(meshInfo->vertices.size());
+		//vector<PxVec3> physxVertices;
+		//physxVertices.reserve(meshInfo->vertices.size());
 
-		vector<PxU32> physxIndices;
-		physxIndices.reserve(meshInfo->indices[0].size());
+		//vector<PxU32> physxIndices;
+		//physxIndices.reserve(meshInfo->indices[0].size());
 
-		for (const auto& vertex : meshInfo->vertices) {
-			physxVertices.emplace_back(vertex.pos.x, vertex.pos.y, vertex.pos.z);
-		}
+		//for (const auto& vertex : meshInfo->vertices) {
+		//	physxVertices.emplace_back(vertex.pos.x, vertex.pos.y, vertex.pos.z);
+		//}
 
-		for (const auto& index : meshInfo->indices[0]) {
-			physxIndices.emplace_back(index);
-		}
+		//for (const auto& index : meshInfo->indices[0]) {
+		//	physxIndices.emplace_back(index);
+		//}
 
-		// PxCookingParams 설정
-		PxCookingParams params(physics->getTolerancesScale());
-		params.meshPreprocessParams = PxMeshPreprocessingFlags(PxMeshPreprocessingFlag::eWELD_VERTICES);
-		params.convexMeshCookingType = PxConvexMeshCookingType::eQUICKHULL;
+		//// PxCookingParams 설정
+		//PxCookingParams params(physics->getTolerancesScale());
+		//params.meshPreprocessParams = PxMeshPreprocessingFlags(PxMeshPreprocessingFlag::eWELD_VERTICES);
+		//params.convexMeshCookingType = PxConvexMeshCookingType::eQUICKHULL;
 
-		// PxTriangleMeshDesc 설정
-		PxTriangleMeshDesc meshDesc;
-		meshDesc.points.count = static_cast<PxU32>(physxVertices.size());
-		meshDesc.points.stride = sizeof(PxVec3);
-		meshDesc.points.data = physxVertices.data();
-		meshDesc.triangles.count = static_cast<PxU32>(physxIndices.size() / 3);
-		meshDesc.triangles.stride = 3 * sizeof(PxU32);
-		meshDesc.triangles.data = physxIndices.data();
+		//// PxTriangleMeshDesc 설정
+		//PxTriangleMeshDesc meshDesc;
+		//meshDesc.points.count = static_cast<PxU32>(physxVertices.size());
+		//meshDesc.points.stride = sizeof(PxVec3);
+		//meshDesc.points.data = physxVertices.data();
+		//meshDesc.triangles.count = static_cast<PxU32>(physxIndices.size() / 3);
+		//meshDesc.triangles.stride = 3 * sizeof(PxU32);
+		//meshDesc.triangles.data = physxIndices.data();
 
-		// PxTriangleMeshDesc를 직렬화하기 위한 메모리 스트림 생성
-		PxDefaultMemoryOutputStream writeBuffer;
-		PxTriangleMeshCookingResult::Enum result;
-		bool status = PxCookTriangleMesh(params, meshDesc, writeBuffer, &result);
-		if (!status) {
-			cerr << "Failed to cook triangle mesh." << endl;
-		}
+		//// PxTriangleMeshDesc를 직렬화하기 위한 메모리 스트림 생성
+		//PxDefaultMemoryOutputStream writeBuffer;
+		//PxTriangleMeshCookingResult::Enum result;
+		//bool status = PxCookTriangleMesh(params, meshDesc, writeBuffer, &result);
+		//if (!status) {
+		//	cerr << "Failed to cook triangle mesh." << endl;
+		//}
 
-		if (writeBuffer.getSize() == 0) {
-			cerr << "WriteBuffer is empty." << endl;
-		}
+		//if (writeBuffer.getSize() == 0) {
+		//	cerr << "WriteBuffer is empty." << endl;
+		//}
 
-		// 직렬화된 데이터를 PxInputStream으로 변환
-		PxDefaultMemoryInputData readBuffer(writeBuffer.getData(), writeBuffer.getSize());
-		PxTriangleMesh* triangleMesh = physics->createTriangleMesh(readBuffer);
+		//// 직렬화된 데이터를 PxInputStream으로 변환
+		//PxDefaultMemoryInputData readBuffer(writeBuffer.getData(), writeBuffer.getSize());
+		//PxTriangleMesh* triangleMesh = physics->createTriangleMesh(readBuffer);
 
-		PxTriangleMeshGeometry triangleMeshGeometry(triangleMesh, PxMeshScale(PxVec3(1, 1, 1)));
-		PxRigidStatic* triangleMeshActor = physics->createRigidStatic(PxTransform(PxVec3(0, 0, 0)));
-		PxShape* triangleMeshShape = physics->createShape(triangleMeshGeometry, *defaultMaterial);
+		//PxTriangleMeshGeometry triangleMeshGeometry(triangleMesh, PxMeshScale(PxVec3(1, 1, 1)));
+		//PxRigidStatic* triangleMeshActor = physics->createRigidStatic(PxTransform(PxVec3(0, 0, 0)));
+		//PxShape* triangleMeshShape = physics->createShape(triangleMeshGeometry, *defaultMaterial);
 
-		// x축 기준 -90도 회전
-		PxQuat quat(-XM_PIDIV2, PxVec3(1, 0, 0));
-		triangleMeshActor->setGlobalPose(PxTransform(PxVec3(0, 0, 0), quat));
+		//// x축 기준 -90도 회전
+		//PxQuat quat(-XM_PIDIV2, PxVec3(1, 0, 0));
+		//triangleMeshActor->setGlobalPose(PxTransform(PxVec3(0, 0, 0), quat));
 
-		triangleMeshActor->attachShape(*triangleMeshShape);
-		defaultScene->addActor(*triangleMeshActor);
+		//triangleMeshActor->attachShape(*triangleMeshShape);
+		//defaultScene->addActor(*triangleMeshActor);
 
-		triangleMeshShape->release();
+		//triangleMeshShape->release();
 	}
 #pragma endregion
-
-	//{
-	//	//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage1_Mimic.fbx");
-	//	shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage1_Mimic", L"..\\Resources\\FBX\\Stage1_Mimic.meshdata");
-
-	//	vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
-
-	//	for (auto& gameObject : gameObjects) {
-	//		gameObject->SetName(L"Stage1_Mimic");
-	//		gameObject->SetCheckFrustum(true);
-	//		gameObject->GetTransform()->SetLocalPosition(Vec3(-2054.f, 4.f, -1173.f));
-	//		gameObject->GetTransform()->SetLocalScale(Vec3(100.f, 100.f, 100.f));
-	//		gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, -1.1f, 0.f));
-
-	//		scene->AddGameObject(gameObject);
-	//		gameObject->AddComponent(make_shared<TestAnimation>());
-	//	}
-	//}
-
-	//{
-	//	//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage1_SkeletonBird.fbx");
-	//	shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage1_SkeletonBird", L"..\\Resources\\FBX\\Stage1_SkeletonBird.meshdata");
-
-	//	vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
-
-	//	for (auto& gameObject : gameObjects) {
-	//		gameObject->SetName(L"Stage1_SkeletonBird");
-	//		gameObject->SetCheckFrustum(true);
-	//		gameObject->GetTransform()->SetLocalPosition(Vec3(-1881.f, 5.7f, -1005.f));
-	//		gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
-	//		gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, -0.3f, 0.f));
-
-	//		scene->AddGameObject(gameObject);
-	//		//gameObject->AddComponent(make_shared<TestAnimation>());
-	//	}
-	//}
-
-	//{
-	//	//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage2_Haunt.fbx");
-	//	shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage2_Haunt", L"..\\Resources\\FBX\\Stage2_Haunt.meshdata");
-
-	//	vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
-
-	//	for (auto& gameObject : gameObjects) {
-	//		gameObject->SetName(L"Stage2_Haunt");
-	//		gameObject->SetCheckFrustum(true);
-	//		gameObject->GetTransform()->SetLocalPosition(Vec3(-1733.6f, 5.7f, -993.f));
-	//		gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
-	//		gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, -0.01f, 0.f));
-
-	//		scene->AddGameObject(gameObject);
-	//		//gameObject->AddComponent(make_shared<TestAnimation>());
-	//	}
-	//}
-
-	//{
-	//	//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage2_TelepachyRat.fbx");
-	//	shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage2_TelepachyRat", L"..\\Resources\\FBX\\Stage2_TelepachyRat.meshdata");
-
-	//	vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
-
-	//	for (auto& gameObject : gameObjects) {
-	//		gameObject->SetName(L"Stage2_TelepachyRat");
-	//		gameObject->SetCheckFrustum(true);
-	//		gameObject->GetTransform()->SetLocalPosition(Vec3(-1617.f, 5.6f, -1019.f));
-	//		gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
-	//		gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, -0.024f, 0.f));
-
-	//		scene->AddGameObject(gameObject);
-	//		//gameObject->AddComponent(make_shared<TestAnimation>());
-	//	}
-	//}
-
-	//{
-	//	//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage3_Alien_Plant.fbx");
-	//	shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage3_Alien_Plant", L"..\\Resources\\FBX\\Stage3_Alien_Plant.meshdata");
-
-	//	vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
-
-	//	for (auto& gameObject : gameObjects) {
-	//		gameObject->SetName(L"Stage3_Alien_Plant");
-	//		gameObject->SetCheckFrustum(true);
-	//		gameObject->GetTransform()->SetLocalPosition(Vec3(-1506.f, 5.56f, -1171.f));
-	//		gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
-	//		gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 0.382f, 0.f));
-
-	//		scene->AddGameObject(gameObject);
-	//		//gameObject->AddComponent(make_shared<TestAnimation>());
-	//	}
-	//}
-
-	//{
-	//	//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage3_EPlant.fbx");
-	//	shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage3_EPlant", L"..\\Resources\\FBX\\Stage3_EPlant.meshdata");
-
-	//	vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
-
-	//	for (auto& gameObject : gameObjects) {
-	//		gameObject->SetName(L"Stage3_EPlant");
-	//		gameObject->SetCheckFrustum(true);
-	//		gameObject->GetTransform()->SetLocalPosition(Vec3(-1443.f, 5.4f, -1299.f));
-	//		gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
-	//		gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 0.879f, 0.f));
-
-	//		scene->AddGameObject(gameObject);
-	//		//gameObject->AddComponent(make_shared<TestAnimation>());
-	//	}
-	//}
-
-	//{
-	//	//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage4_Metal Robot.fbx");
-	//	shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage4_Metal Robot", L"..\\Resources\\FBX\\Stage4_Metal Robot.meshdata");
-
-	//	vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
-
-	//	for (auto& gameObject : gameObjects) {
-	//		gameObject->SetName(L"Stage4_Metal Robot");
-	//		gameObject->SetCheckFrustum(true);
-	//		gameObject->GetTransform()->SetLocalPosition(Vec3(-1451.6f, 4.879f, -1452.f));
-	//		gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
-	//		gameObject->GetTransform()->SetLocalRotation(Vec3(-1.6f, 1.5f, 0.f));
-
-	//		scene->AddGameObject(gameObject);
-	//		//gameObject->AddComponent(make_shared<TestAnimation>());
-	//	}
-	//}
 
 	return scene;	
 }

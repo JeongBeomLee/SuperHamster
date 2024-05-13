@@ -6,9 +6,6 @@
 #include "Timer.h"
 #include "Engine.h"
 
-const float moveForce = 10000.0f;
-const PxVec3 up(0.0f, 1.0f, 0.0f);
-
 void TestMap::Update()
 {
 	//if (INPUT->GetButtonDown(KEY_TYPE::KEY_1)) {

@@ -11,7 +11,6 @@ enum class COMPONENT_TYPE : uint8
 	TERRAIN,
 	COLLIDER,
 	ANIMATOR,
-	PHYSX,
 	// ...
 	MONO_BEHAVIOUR,
 	END,
@@ -49,7 +48,6 @@ public:
 	shared_ptr<Transform> GetTransform();
 	shared_ptr<MeshRenderer> GetMeshRenderer();
 	shared_ptr<Animator> GetAnimator();
-	shared_ptr<PhysXComponent> GetPhysXComponent();
 
 private:
 	friend class GameObject;

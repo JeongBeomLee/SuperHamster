@@ -211,4 +211,6 @@ const shared_ptr<GameObject> Scene::GetGameObjectByName(const wstring& name) con
 	for (auto& gameObject : _gameObjects)
 		if (gameObject->GetName() == name)
 			return gameObject;
+
+	return nullptr;
 }
