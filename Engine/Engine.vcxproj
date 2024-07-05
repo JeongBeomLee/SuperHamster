@@ -85,12 +85,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)Output\Debug\</OutDir>
-    <IncludePath>$(SolutionDir)FBX\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)PhysX\include\;$(SolutionDir)FBX\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)Output\Release\</OutDir>
-    <IncludePath>$(SolutionDir)FBX\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)PhysX\include\;$(SolutionDir)FBX\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

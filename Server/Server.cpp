@@ -14,26 +14,18 @@
 #include <memory>
 #include "protocol.h"
 #include "stdafx.h"
-#include "PxPhysicsAPI.h"
-#pragma comment(lib, "PhysX_64.lib")
-#pragma comment(lib, "PhysXCommon_64.lib")
-#pragma comment(lib, "PhysXFoundation_64.lib")
-#pragma comment(lib, "PhysXExtensions_static_64.lib")
-#pragma comment(lib, "PhysXPvdSDK_static_64.lib")
-#pragma comment(lib, "PhysXCharacterKinematic_static_64.lib")
-#pragma comment(lib, "PhysXCooking_64.lib")
-using namespace physx;
 
 PxDefaultAllocator		pxAllocator;
 PxDefaultErrorCallback	errorCallback;
 PxFoundation*			pxFoundation		= nullptr;
 PxPhysics*				pxPhysics			= nullptr;
-PxPvd*					pxPvd				= nullptr;	// 디버그용
-PxPvdSceneClient*		pxPvdScene			= nullptr;	// 디버그용
 PxDefaultCpuDispatcher* pxCpuDispatcher		= nullptr;
 PxScene*				pxDefaultScene		= nullptr;
 PxMaterial*				pxDefaultMaterial	= nullptr;
 PxControllerManager*	pxControllerManager = nullptr;
+
+PxPvd*					pxPvd				= nullptr;	// 디버그용
+PxPvdSceneClient*		pxPvdScene			= nullptr;	// 디버그용
 
 void error_display(const char* msg, int err_no);
 int  getNewClientId();
@@ -564,10 +556,17 @@ void initPhysX()
 	pxFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, pxAllocator, errorCallback);
 
 	// PhysX Physics 객체 생성
+#ifdef _DEBUG
 	pxPvd = PxCreatePvd(*pxFoundation);
 	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
 	pxPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 	pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true, pxPvd);
+#else
+	pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true);
+#endif // _DEBUG
+
+
+	
 
 	//pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true);
 
@@ -579,8 +578,10 @@ void initPhysX()
 	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
 	pxDefaultScene = pxPhysics->createScene(sceneDesc);
 
+#ifdef _DEBUG
 	pxPvdScene = pxDefaultScene->getScenePvdClient();
 	pxPvdScene->setScenePvdFlags(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS | PxPvdSceneFlag::eTRANSMIT_CONTACTS | PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES);
+#endif // _DEBUG
 
 	pxDefaultMaterial = pxPhysics->createMaterial(0.5f, 0.5f, 0.6f);
 	PxRigidStatic* groundPlane = PxCreatePlane(*pxPhysics, PxPlane(0, 1, 0, 0), *pxDefaultMaterial); // PxPlane(a, b, c, d) : ax + by + cz + d = 0
