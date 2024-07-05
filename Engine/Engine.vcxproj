@@ -84,15 +84,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)Output\</OutDir>
-    <IncludePath>$(SolutionDir)Library/Include/physx/;$(SolutionDir)Library/Include/FBX/;$(SolutionDir)Library/Include/;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)Library/Lib/phusx;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)Output\Debug\</OutDir>
+    <IncludePath>$(SolutionDir)FBX\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)Output\</OutDir>
-    <IncludePath>$(SolutionDir)Library/Include/physx/;$(SolutionDir)Library/Include/FBX/;$(SolutionDir)Library/Include/;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)Library/Lib/phusx;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)Output\Release\</OutDir>
+    <IncludePath>$(SolutionDir)FBX\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -167,6 +165,18 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <FxCompile>
+      <DisableOptimizations>true</DisableOptimizations>
+    </FxCompile>
+    <FxCompile>
+      <EnableDebuggingInformation>true</EnableDebuggingInformation>
+    </FxCompile>
+    <FxCompile>
+      <ShaderType>Effect</ShaderType>
+    </FxCompile>
+    <FxCompile>
+      <ShaderModel>5.0</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Animator.h" />

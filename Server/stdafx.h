@@ -4,7 +4,6 @@
 #include "../Engine/SimpleMath.h"
 
 using namespace DirectX;
-using namespace std;
 
 using int8 = __int8;
 using int16 = __int16;

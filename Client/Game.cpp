@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Game.h"
-#include "Engine.h"
-#include "SceneManager.h"
+#include "../Engine/Engine.h"
+#include "../Engine/SceneManager.h"
 
 void Game::Init(const WindowInfo& info)
 {

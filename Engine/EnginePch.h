@@ -25,19 +25,20 @@
 using namespace std;
 namespace fs = std::filesystem;
 
+#include <DirectXPackedVector.h>
+#include <DirectXMath.h>
+#include <DirectXColors.h>
 #include <d3d12.h>
-#include <wrl.h>
 #include <d3dcompiler.h>
 #include <dxgi.h>
-#include <DirectXMath.h>
-#include <DirectXPackedVector.h>
-#include <DirectXColors.h>
-#include <DirectXTex/DirectXTex.h>
-#include <DirectXTex/DirectXTex.inl>
+#include <wrl.h>
+#include <fbxsdk.h>
+
 #include "d3dx12.h"
 #include "SimpleMath.h"
 #include "DDSTextureLoader12.h"
-#include "FBX/fbxsdk.h"
+#include "../DirectXTex/DirectXTex.h"
+#include "../DirectXTex/DirectXTex.inl"
 #include "../Server/protocol.h"
 
 using namespace DirectX;
@@ -51,19 +52,19 @@ using namespace Microsoft::WRL;
 #pragma comment(lib, "d3dcompiler")
 
 #ifdef _DEBUG
-#pragma comment(lib, "DirectXTex\\DirectXTex_debug.lib")
+	#pragma comment(lib, "../DirectXTex/DirectXTex_debug.lib")
 #else
-#pragma comment(lib, "DirectXTex\\DirectXTex.lib")
+	#pragma comment(lib, "../DirectXTex/DirectXTex.lib")
 #endif
 
 #ifdef _DEBUG
-#pragma comment(lib, "FBX\\debug\\libfbxsdk-md.lib")
-#pragma comment(lib, "FBX\\debug\\libxml2-md.lib")
-#pragma comment(lib, "FBX\\debug\\zlib-md.lib")
+	#pragma comment(lib, "../FBX/debug/libfbxsdk-md.lib")
+	#pragma comment(lib, "../FBX/debug/libxml2-md.lib")
+	#pragma comment(lib, "../FBX/debug/zlib-md.lib")
 #else
-#pragma comment(lib, "FBX\\release\libfbxsdk-md.lib")
-#pragma comment(lib, "FBX\\release\libxml2-md.lib")
-#pragma comment(lib, "FBX\\release\\zlib-md.lib")
+	#pragma comment(lib, "../FBX/release/libfbxsdk-md.lib")
+	#pragma comment(lib, "../FBX/release/libxml2-md.lib")
+	#pragma comment(lib, "../FBX/release/zlib-md.lib")
 #endif
 
 // 각종 typedef
@@ -80,8 +81,7 @@ using Vec3		= DirectX::SimpleMath::Vector3;
 using Vec4		= DirectX::SimpleMath::Vector4;
 using Matrix	= DirectX::SimpleMath::Matrix;
 
-enum PLAYER_STATE
-{
+enum PLAYER_STATE {
 	CLIMB,
 	FALLING,
 	FALL_DOWN,
@@ -98,8 +98,7 @@ enum PLAYER_STATE
 	END,
 };
 
-enum class CBV_REGISTER : uint8
-{
+enum class CBV_REGISTER : uint8 {
 	b0,
 	b1,
 	b2,
@@ -109,8 +108,7 @@ enum class CBV_REGISTER : uint8
 	END
 };
 
-enum class SRV_REGISTER : uint8
-{
+enum class SRV_REGISTER : uint8 {
 	t0 = static_cast<uint8>(CBV_REGISTER::END),
 	t1,
 	t2,
@@ -125,8 +123,7 @@ enum class SRV_REGISTER : uint8
 	END
 };
 
-enum class UAV_REGISTER : uint8
-{
+enum class UAV_REGISTER : uint8 {
 	u0 = static_cast<uint8>(SRV_REGISTER::END),
 	u1,
 	u2,
@@ -136,8 +133,7 @@ enum class UAV_REGISTER : uint8
 	END,
 };
 
-enum
-{
+enum {
 	SAMPLER_COUNT = 1,
 	SWAP_CHAIN_BUFFER_COUNT = 2,
 	CBV_REGISTER_COUNT = CBV_REGISTER::END,
@@ -147,16 +143,14 @@ enum
 	TOTAL_REGISTER_COUNT = CBV_SRV_REGISTER_COUNT + UAV_REGISTER_COUNT
 };
 
-struct WindowInfo
-{
+struct WindowInfo {
 	HWND	hwnd; // 출력 윈도우
 	int32	width; // 너비
 	int32	height; // 높이
 	bool	windowed; // 창모드 or 전체화면
 };
 
-struct Vertex
-{
+struct Vertex {
 	Vertex() {}
 
 	Vertex(Vec3 p, Vec2 u, Vec3 n, Vec3 t)
@@ -198,8 +192,7 @@ public:								\
 
 #define CONST_BUFFER(type)	gEngine->GetConstantBuffer(type)
 
-struct TransformParams
-{
+struct TransformParams {
 	Matrix matWorld;
 	Matrix matView;
 	Matrix matProjection;
@@ -208,8 +201,7 @@ struct TransformParams
 	Matrix matViewInv;
 };
 
-struct AnimFrameParams
-{
+struct AnimFrameParams {
 	Vec4	scale;
 	Vec4	rotation; // Quaternion
 	Vec4	translation;

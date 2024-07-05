@@ -6,7 +6,6 @@
 #define MAX_LOADSTRING 100
 
 WindowInfo gWindowInfo;
-
 HINSTANCE hInst;
 WCHAR szTitle[MAX_LOADSTRING];
 WCHAR szWindowClass[MAX_LOADSTRING];
@@ -45,14 +44,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     unique_ptr<Game> game = make_unique<Game>();
     game->Init(gWindowInfo);
 
-    // 서버 초기화
+    // 소켓 초기화
     int retval;
     char SERVER_ADDR[16] = "127.0.0.1";
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
         return 1;
 
-    serverSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, nullptr, 0, WSA_FLAG_OVERLAPPED);
+    serverSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
     if (serverSocket == INVALID_SOCKET) {
         error_display("socket()", WSAGetLastError());
         return 1;
@@ -66,6 +65,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return 1;
     }
 
+    // connect
     SOCKADDR_IN serveraddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
@@ -73,9 +73,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     serveraddr.sin_port = htons(PORT);
     retval = connect(serverSocket, (SOCKADDR*)&serveraddr, sizeof(serveraddr));
     if (retval == SOCKET_ERROR) {
-        if (WSAGetLastError() != WSAEWOULDBLOCK) {
-			error_display("connect()", WSAGetLastError());
-			return 1;
+        int errorCode = WSAGetLastError();
+        if (errorCode != WSAEWOULDBLOCK) {
+            error_display("connect()", errorCode);
+            return 1;
         }
     }
     char net_buf[BUF_SIZE];

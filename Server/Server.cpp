@@ -40,7 +40,7 @@ int  getNewClientId();
 void disconnect(int clientID);
 void process_packet(int clientID, char* packet);
 void initPhysX();
-void LoadMap(const wstring& _strFilePath);
+void LoadMap(const std::wstring& _strFilePath);
 enum CLIENT_STATE { ST_FREE, ST_INGAME };
 
 enum PLAYER_STATE
@@ -122,7 +122,7 @@ struct Vertex
 };
 struct BoneInfo
 {
-	wstring					boneName;
+	std::wstring			boneName;
 	int32					parentIdx;
 	Matrix					matOffset;
 };
@@ -197,7 +197,7 @@ int main()
 	std::wcout.imbue(std::locale("korean"));
 	g_Timer.Init();
 	initPhysX();
-	//LoadMap(L"Stage1.meshdata");
+	LoadMap(L"Stage1.meshdata");
 
 	WSADATA WSAData;
 	WSAStartup(MAKEWORD(2, 2), &WSAData);
@@ -218,6 +218,7 @@ int main()
 
 	while (true) {
 		SOCKET client = WSAAccept(serverSocket, reinterpret_cast<sockaddr*>(&clientAddress), &addressSize, NULL, NULL);
+		//SOCKET client = accept(serverSocket, reinterpret_cast<sockaddr*>(&clientAddress), &addressSize);
 		if (client != INVALID_SOCKET) {
 			int client_id = getNewClientId();
 			if (client_id != -1) {
@@ -536,7 +537,7 @@ void process_packet(int clientID, char* packet)
 			}
 
 			disp *= players[clientID].velocity * g_Timer.GetDeltaTime() * 100.0f;
-			disp.y -= 9.8f * g_Timer.GetDeltaTime() * players[clientID].weight;
+			disp.y -= 9.8f * g_Timer.GetDeltaTime() * players[clientID].weight * 100.0f;
 
 			PxControllerFilters filters;
 			playerController->move(disp, 0.001f, g_Timer.GetDeltaTime(), filters);
@@ -563,12 +564,12 @@ void initPhysX()
 	pxFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, pxAllocator, errorCallback);
 
 	// PhysX Physics 객체 생성
-	/*pxPvd = PxCreatePvd(*pxFoundation);
+	pxPvd = PxCreatePvd(*pxFoundation);
 	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
 	pxPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
-	pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true, pxPvd);*/
+	pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true, pxPvd);
 
-	pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true);
+	//pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true);
 
 	// PhysX Scene 생성
 	PxSceneDesc sceneDesc(pxPhysics->getTolerancesScale());
@@ -595,9 +596,9 @@ void initPhysX()
 	std::cout << "PhysX Init Complete" << std::endl;
 }
 
-void LoadMap(const wstring& _strFilePath)
+void LoadMap(const std::wstring& _strFilePath)
 {
-	ifstream in{ _strFilePath, ios::binary };
+	std::ifstream in{ _strFilePath, std::ios::binary };
 	if (!in.is_open()) {
 		std::cout << "Failed to open file" << std::endl;
 		return;
@@ -610,21 +611,21 @@ void LoadMap(const wstring& _strFilePath)
 		size_t nameLength = 0;
 
 		in.read(reinterpret_cast<char*>(&nameLength), sizeof(nameLength)); // 이름 길이 읽기
-		wstring meshName;
+		std::wstring meshName;
 		meshName.resize(nameLength);
 		in.read(reinterpret_cast<char*>(meshName.data()), nameLength * sizeof(wchar_t)); // 이름 읽기
 
 		// Vertex 정보 읽기
 		int vertexCount = 0;
 		in.read(reinterpret_cast<char*>(&vertexCount), sizeof(vertexCount));
-		vector<Vertex> vertices;
+		std::vector<Vertex> vertices;
 		vertices.resize(vertexCount);
 		in.read(reinterpret_cast<char*>(vertices.data()), vertexCount * sizeof(Vertex));
 
 		// Index 정보 읽기
 		int indexCount = 0;
 		in.read(reinterpret_cast<char*>(&indexCount), sizeof(indexCount));
-		vector<vector<uint32_t>> indices;
+		std::vector<std::vector<uint32_t>> indices;
 		indices.resize(indexCount);
 		for (int j = 0; j < indexCount; ++j) {
 			int indexSize = 0;
@@ -633,10 +634,10 @@ void LoadMap(const wstring& _strFilePath)
 			in.read(reinterpret_cast<char*>(indices[j].data()), indexSize * sizeof(uint32_t));
 		}
 
-		vector<PxVec3> physxVertices;
+		std::vector<PxVec3> physxVertices;
 		physxVertices.reserve(vertices.size());
 
-		vector<PxU32> physxIndices;
+		std::vector<PxU32> physxIndices;
 		physxIndices.reserve(indices[0].size());
 
 		for (const auto& vertex : vertices) {
@@ -666,11 +667,11 @@ void LoadMap(const wstring& _strFilePath)
 		PxTriangleMeshCookingResult::Enum result;
 		bool status = PxCookTriangleMesh(params, meshDesc, writeBuffer, &result);
 		if (!status) {
-			cerr << "Failed to cook triangle mesh." << endl;
+			std::cerr << "Failed to cook triangle mesh." << std::endl;
 		}
 
 		if (writeBuffer.getSize() == 0) {
-			cerr << "WriteBuffer is empty." << endl;
+			std::cerr << "WriteBuffer is empty." << std::endl;
 		}
 
 		// 직렬화된 데이터를 PxInputStream으로 변환
@@ -701,7 +702,7 @@ void LoadMap(const wstring& _strFilePath)
 			for (int j = 0; j < animClipCount; ++j) {
 				// 이름, 길이, 프레임 수 읽기
 				size_t nameLength = 0;
-				wstring animName;
+				std::wstring animName;
 				double duration = 0.0;
 				int frameCount = 0;
 

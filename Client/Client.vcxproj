@@ -80,15 +80,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)Library/Include/FBX/;$(SolutionDir)Library/Include/physx/;$(SolutionDir)Library/Include/;$(SolutionDir)Engine\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)Library/Lib/physx/;$(SolutionDir)Library/Lib/;$(SolutionDir)Output\;$(LibraryPath)</LibraryPath>
-    <OutDir>$(SolutionDir)Output\</OutDir>
+    <OutDir>$(SolutionDir)Output\Debug\</OutDir>
+    <IncludePath>$(SolutionDir)FBX\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Library/Include/FBX/;$(SolutionDir)Library/Include/physx/;$(SolutionDir)Library/Include/;$(SolutionDir)Engine\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)Library/Lib/physx/;$(SolutionDir)Library/Lib/;$(SolutionDir)Output\;$(LibraryPath)</LibraryPath>
-    <OutDir>$(SolutionDir)Output\</OutDir>
+    <OutDir>$(SolutionDir)Output\Release\</OutDir>
+    <IncludePath>$(SolutionDir)FBX\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
