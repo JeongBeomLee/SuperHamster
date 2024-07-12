@@ -14,6 +14,7 @@ GraphicsCommandQueue::~GraphicsCommandQueue()
 
 void GraphicsCommandQueue::Init(ComPtr<ID3D12Device> device, shared_ptr<SwapChain> pSwapChain)
 {
+	HREFTYPE hr = S_OK;
 	swapChain = pSwapChain;
 
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
@@ -22,18 +23,39 @@ void GraphicsCommandQueue::Init(ComPtr<ID3D12Device> device, shared_ptr<SwapChai
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
 	// Create Graphics Command Queue
-	device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue));
-	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
-	device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
+	hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue));
+	if (FAILED(hr)) {
+		__debugbreak();
+	}
+
+	hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
+	if (FAILED(hr)) {
+		__debugbreak();
+	}
+
+	hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
+	if (FAILED(hr)) {
+		__debugbreak();
+	}
 	commandList->Close();
 
 	// Create Resource Command Queue 
-	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&resourceCommandAllocator));
-	device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, resourceCommandAllocator.Get(), nullptr, IID_PPV_ARGS(&resourceCommandList));
+	hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&resourceCommandAllocator));
+	if(FAILED(hr)) {
+		__debugbreak();
+	}
+
+	hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, resourceCommandAllocator.Get(), nullptr, IID_PPV_ARGS(&resourceCommandList));
+	if(FAILED(hr)) {
+		__debugbreak();
+	}
 
 	// CreateFence
 	// - CPU와 GPU의 동기화 수단으로 쓰인다
-	device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+	hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+	if(FAILED(hr)) {
+		__debugbreak();
+	}
 	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 }
 
@@ -126,17 +148,30 @@ ComputeCommandQueue::~ComputeCommandQueue()
 
 void ComputeCommandQueue::Init(ComPtr<ID3D12Device> device)
 {
+	HRESULT hr = S_OK;
 	D3D12_COMMAND_QUEUE_DESC computeQueueDesc{};
 	computeQueueDesc.Type  = D3D12_COMMAND_LIST_TYPE_COMPUTE;
 	computeQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
-	device->CreateCommandQueue(&computeQueueDesc, IID_PPV_ARGS(&commandQueue));
-	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COMPUTE, IID_PPV_ARGS(&commandAllocator));
-	device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
+	hr = device->CreateCommandQueue(&computeQueueDesc, IID_PPV_ARGS(&commandQueue));
+	if (FAILED(hr)) {
+		__debugbreak();
+	}
+	hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COMPUTE, IID_PPV_ARGS(&commandAllocator));
+	if (FAILED(hr)) {
+		__debugbreak();
+	}
+	hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
+	if (FAILED(hr)) {
+		__debugbreak();
+	}
 
 	// CreateFence
 	// - CPU와 GPU의 동기화 수단으로 쓰인다
-	device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+	hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+	if (FAILED(hr)) {
+		__debugbreak();
+	}
 	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 }
 

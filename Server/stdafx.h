@@ -1,3 +1,17 @@
+#include <WS2tcpip.h>
+#include <MSWSock.h>
+#pragma comment(lib, "WS2_32.lib")
+#pragma comment(lib, "MSWSock.lib")
+
+#include <iostream>
+#include <array>
+#include <algorithm>
+#include <chrono>
+#include <locale>
+#include <string>
+#include <fstream>
+#include <vector>
+#include <memory>
 #include <d3d12.h>
 #include <DirectXMath.h>
 #include "../Engine/d3dx12.h"
@@ -57,3 +71,52 @@ using Vec2 = DirectX::SimpleMath::Vector2;
 using Vec3 = DirectX::SimpleMath::Vector3;
 using Vec4 = DirectX::SimpleMath::Vector4;
 using Matrix = DirectX::SimpleMath::Matrix;
+
+enum PLAYER_STATE {
+	CLIMB,
+	FALLING,
+	FALL_DOWN,
+	FIRE,
+	GETUP,
+	IDLE,
+	HIT,
+	RUN_SLOW,
+	RUN_FAST,
+	ROLL,
+	WALK,
+	AIM,
+
+	END,
+};
+
+struct PlayerInput {
+	bool up;
+	bool down;
+	bool left;
+	bool right;
+	bool aim;
+	bool fire;
+	bool roll;
+};
+
+struct Vertex {
+	Vertex() {}
+
+	Vertex(Vec3 p, Vec2 u, Vec3 n, Vec3 t)
+		: pos(p), uv(u), normal(n), tangent(t)
+	{
+	}
+
+	Vec3 pos;
+	Vec2 uv;
+	Vec3 normal;
+	Vec3 tangent;
+	Vec4 weights;
+	Vec4 indices;
+};
+
+struct BoneInfo {
+	std::wstring			boneName;
+	int32					parentIdx;
+	Matrix					matOffset;
+};

@@ -1,19 +1,6 @@
-#include <WS2tcpip.h>
-#include <MSWSock.h>
-#pragma comment(lib, "WS2_32.lib")
-#pragma comment(lib, "MSWSock.lib")
-
-#include <iostream>
-#include <array>
-#include <algorithm>
-#include <chrono>
-#include <locale>
-#include <string>
-#include <fstream>
-#include <vector>
-#include <memory>
 #include "protocol.h"
 #include "stdafx.h"
+#include "Timer.h"
 
 PxDefaultAllocator		pxAllocator;
 PxDefaultErrorCallback	errorCallback;
@@ -33,91 +20,14 @@ void disconnect(int clientID);
 void process_packet(int clientID, char* packet);
 void initPhysX();
 void LoadMap(const std::wstring& _strFilePath);
-enum CLIENT_STATE { ST_FREE, ST_INGAME };
 
-enum PLAYER_STATE
-{
-	CLIMB,
-	FALLING,
-	FALL_DOWN,
-	FIRE,
-	GETUP,
-	IDLE,
-	HIT,
-	RUN_SLOW,
-	RUN_FAST,
-	ROLL,
-	WALK,
-	AIM,
-
-	END,
-};
-
-class Timer
-{
-public:
-	void Init()
-	{
-		::QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&_frequency));
-		::QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&_prevCount));
-	}
-
-	void Update()
-	{
-		uint64 currentCount;
-		::QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&currentCount));
-
-		_deltaTime = (currentCount - _prevCount) / static_cast<float>(_frequency);
-		_prevCount = currentCount;
-
-		_frameCount++;
-		_frameTime += _deltaTime;
-
-		if (_frameTime > 1.f) {
-			_fps = static_cast<uint32>(_frameCount / _frameTime);
-
-			_frameTime = 0.f;
-			_frameCount = 0;
-		}
-	}
-
-	uint32 GetFps() { return _fps; }
-	float GetDeltaTime() { return _deltaTime; }
-
-private:
-	uint64	_frequency = 0;
-	uint64	_prevCount = 0;
-	float	_deltaTime = 0.f;
-
-private:
-	uint32	_frameCount = 0;
-	float	_frameTime = 0.f;
-	uint32	_fps = 0;
-};
 Timer g_Timer;
 
-struct Vertex
-{
-	Vertex() {}
-
-	Vertex(Vec3 p, Vec2 u, Vec3 n, Vec3 t)
-		: pos(p), uv(u), normal(n), tangent(t)
-	{
-	}
-
-	Vec3 pos;
-	Vec2 uv;
-	Vec3 normal;
-	Vec3 tangent;
-	Vec4 weights;
-	Vec4 indices;
+enum CLIENT_STATE {
+	ST_FREE,
+	ST_INGAME
 };
-struct BoneInfo
-{
-	std::wstring			boneName;
-	int32					parentIdx;
-	Matrix					matOffset;
-};
+
 class SESSION {
 public:
 	SESSION() 
@@ -180,7 +90,6 @@ public:
 	float 			rotationSpeed;
 	float			rollStartTime;
 	float			fireStartTime;
-	//int				last_move_time;
 };
 
 std::array<class SESSION, MAX_USER> players;
@@ -201,16 +110,16 @@ int main()
 	serverAddress.sin_port = htons(PORT);
 	serverAddress.sin_addr.S_un.S_addr = INADDR_ANY;
 	bind(serverSocket, reinterpret_cast<sockaddr*>(&serverAddress), sizeof(serverAddress));
+
 	listen(serverSocket, SOMAXCONN);
+
 	SOCKADDR_IN clientAddress;
 	int addressSize = sizeof(clientAddress);
-
 	unsigned long noblock = 1;
 	ioctlsocket(serverSocket, FIONBIO, &noblock);
 
 	while (true) {
 		SOCKET client = WSAAccept(serverSocket, reinterpret_cast<sockaddr*>(&clientAddress), &addressSize, NULL, NULL);
-		//SOCKET client = accept(serverSocket, reinterpret_cast<sockaddr*>(&clientAddress), &addressSize);
 		if (client != INVALID_SOCKET) {
 			int client_id = getNewClientId();
 			if (client_id != -1) {
@@ -219,11 +128,9 @@ int main()
 				players[client_id].id = client_id;
 				players[client_id].prevRemain = 0;
 				players[client_id].socket = client;
-				players[client_id].doRecv();
-				std::cout << "Client connected : " << client_id << std::endl;
-
-				/*u_long on = 1;
-				ioctlsocket(client, FIONBIO, &on);*/
+#ifdef _DEBUG
+				std::cout << "Player" << client_id + 1  <<" connected." << std::endl;
+#endif // _DEBUG
 			}
 		}
 
@@ -251,7 +158,7 @@ int main()
 		}
 
 		g_Timer.Update();
-		pxDefaultScene->simulate(1.f / 60.f);
+		pxDefaultScene->simulate(g_Timer.GetDeltaTime());
 		pxDefaultScene->fetchResults(true);
 	}
 
@@ -427,16 +334,6 @@ void process_packet(int clientID, char* packet)
 					players[clientID].playerState = PLAYER_STATE::IDLE;
 			}
 
-			/*if (((players[clientID].playerState == PLAYER_STATE::AIM && p->direction & 32) || (players[clientID].playerState == PLAYER_STATE::FIRE && p->direction & 32)) && !(p->prevDirection & 32)) {
-				players[clientID].playerState = PLAYER_STATE::FIRE;
-			}
-			else if (players[clientID].playerState == PLAYER_STATE::FIRE) {
-				if (p->direction & 16)
-					players[clientID].playerState = PLAYER_STATE::AIM;
-				else
-					players[clientID].playerState = PLAYER_STATE::IDLE;
-			}*/
-
 			if ((players[clientID].playerState == PLAYER_STATE::AIM && p->direction & 32) && !(p->prevDirection & 32)) {
 				players[clientID].playerState = PLAYER_STATE::FIRE;
 				players[clientID].fireStartTime = g_Timer.GetDeltaTime();
@@ -565,11 +462,6 @@ void initPhysX()
 	pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true);
 #endif // _DEBUG
 
-
-	
-
-	//pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true);
-
 	// PhysX Scene 생성
 	PxSceneDesc sceneDesc(pxPhysics->getTolerancesScale());
 	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
@@ -594,7 +486,7 @@ void initPhysX()
 	// PhysX Scene에서 충돌 정보 수신을 위한 콜백 함수 설정
 	//pxScene->setSimulationEventCallback();
 
-	std::cout << "PhysX Init Complete" << std::endl;
+	std::cout << "PhysX Init Complete\n" << std::endl;
 }
 
 void LoadMap(const std::wstring& _strFilePath)
@@ -771,4 +663,6 @@ void LoadMap(const std::wstring& _strFilePath)
 			}
 		}
 	}
+
+	std::wcout << _strFilePath << " Load Complete" << std::endl;
 }

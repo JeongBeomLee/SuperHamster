@@ -127,10 +127,8 @@ void process_data(char* net_buf, size_t io_byte)
 void ProcessPacket(char* ptr)
 {
     static bool first_time = true;
-    switch (ptr[1])
-    {
-    case SC_LOGIN_INFO:
-    {
+    switch (ptr[1]) {
+    case SC_LOGIN_INFO: {
 		SC_LOGIN_INFO_PACKET* packet = reinterpret_cast<SC_LOGIN_INFO_PACKET*>(ptr);
 		g_myid = packet->id;
 
@@ -154,14 +152,12 @@ void ProcessPacket(char* ptr)
     }
     break;
 
-    case SC_ADD_PLAYER:
-    {
+    case SC_ADD_PLAYER: {
         SC_ADD_PLAYER_PACKET* packet = reinterpret_cast<SC_ADD_PLAYER_PACKET*>(ptr);
         int id = packet->id;
 
         if (id != g_myid) {
             Scene* scene = GET_SINGLE(SceneManager)->GetActiveScene().get();
-            //shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster" + to_wstring(id) + L".fbx");
             shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData2", L"..\\Resources\\FBX\\Hamster" + to_wstring(id) + L".meshdata");
 
             vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
@@ -175,20 +171,9 @@ void ProcessPacket(char* ptr)
                 gameObject->SetStatic(false);
 
                 scene->AddGameObject(gameObject);
-                gameObject->AddComponent(make_shared<PlayerScript2>());
+                gameObject->AddComponent(make_shared<PlayerScript>());
             }
         }
-        //else if (id < MAX_USER) {
-        //   players[id] = OBJECT{ *pieces, 0, 0, 64, 64 };
-        //   players[id].move(my_packet->x, my_packet->y);
-        //   players[id].set_name(my_packet->name);
-        //   players[id].show();
-        //}
-        //else {
-        //   //npc[id - NPC_START].x = my_packet->x;
-        //   //npc[id - NPC_START].y = my_packet->y;
-        //   //npc[id - NPC_START].attr |= BOB_ATTR_VISIBLE;
-        //}
         break;
     }
     case SC_MOVE_PLAYER:
@@ -203,17 +188,6 @@ void ProcessPacket(char* ptr)
         gameObject->GetTransform()->SetLocalPosition(my_packet->pos);
         gameObject->GetTransform()->SetLocalRotation(my_packet->dir);
         gameObject->GetTransform()->SetLocalScale(my_packet->scale);
-
-        if (other_id == g_myid) {
-            PlayerScript* playerScript = reinterpret_cast<PlayerScript*>(gameObject->GetScript().get());
-            playerScript->SetVelocity(my_packet->velocity);
-            playerScript->SetState(static_cast<PLAYER_STATE>(my_packet->state));
-        }
-        else {
-            PlayerScript2* playerScript = reinterpret_cast<PlayerScript2*>(gameObject->GetScript().get());
-            playerScript->SetVelocity(my_packet->velocity);
-            playerScript->SetState(static_cast<PLAYER_STATE>(my_packet->state));
-        }
         break;
     }
 

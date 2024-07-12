@@ -84,9 +84,9 @@ void Light::SetLightType(LIGHT_TYPE type)
 		_lightMaterial = GET_SINGLE(Resources)->Get<Material>(L"DirLight");
 
 		_shadowCamera->GetCamera()->SetScale(1.f);
-		_shadowCamera->GetCamera()->SetFar(10000.f);
-		_shadowCamera->GetCamera()->SetWidth(4096);
-		_shadowCamera->GetCamera()->SetHeight(4096);
+		_shadowCamera->GetCamera()->SetFar(1000.f);
+		_shadowCamera->GetCamera()->SetWidth(4096.f);
+		_shadowCamera->GetCamera()->SetHeight(4096.f);
 
 		break;
 	case LIGHT_TYPE::POINT_LIGHT:

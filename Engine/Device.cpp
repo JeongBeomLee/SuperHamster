@@ -2,22 +2,52 @@
 #include "Device.h"
 void Device::Init()
 {
+	ID3D12Debug* pDebugController = nullptr; 
+	ID3D12Debug5* pDebugController5 = nullptr;
 #ifdef _DEBUG
-	// 디버그 레이어 설정
-	D3D12GetDebugInterface(IID_PPV_ARGS(&debugController));
-	debugController->EnableDebugLayer();
+	// D3D12 debug layer 활성화
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&pDebugController)))) {
+		pDebugController->EnableDebugLayer();
+	}
+	if (S_OK == pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController5))) {
+		pDebugController5->SetEnableGPUBasedValidation(TRUE);
+		pDebugController5->SetEnableAutoName(TRUE);
+		pDebugController5->Release();
+		pDebugController5 = nullptr;
+	}
+	if (pDebugController) {
+		pDebugController->Release();
+		pDebugController = nullptr;
+	}
 #endif
-	// DXGI 생성
+	// DXGIFactory 생성
 	CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
 
 	// Device 생성
 	D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&device));
 
-	// MSAA 품질 레벨 확인
-	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msaaQualityLevels;
-	msaaQualityLevels.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	msaaQualityLevels.SampleCount = 4;
-	msaaQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
-	msaaQualityLevels.NumQualityLevels = 0;
-	device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msaaQualityLevels, sizeof(msaaQualityLevels));
+	if (pDebugController) {
+		ID3D12InfoQueue* pInfoQueue = nullptr;
+		device->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
+		if (pInfoQueue) {
+			pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+			pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+
+			D3D12_MESSAGE_ID hide[] = {
+				D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+				D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
+				// Workarounds for debug layer issues on hybrid-graphics systems
+				D3D12_MESSAGE_ID_EXECUTECOMMANDLISTS_WRONGSWAPCHAINBUFFERREFERENCE,
+				D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE
+			};
+
+			D3D12_INFO_QUEUE_FILTER filter = {};
+			filter.DenyList.NumIDs = (UINT)_countof(hide);
+			filter.DenyList.pIDList = hide;
+			pInfoQueue->AddStorageFilterEntries(&filter);
+
+			pInfoQueue->Release();
+			pInfoQueue = nullptr;
+		}
+	}
 }

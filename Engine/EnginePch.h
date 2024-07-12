@@ -81,7 +81,17 @@ using Vec3		= DirectX::SimpleMath::Vector3;
 using Vec4		= DirectX::SimpleMath::Vector4;
 using Matrix	= DirectX::SimpleMath::Matrix;
 
-enum PLAYER_STATE {
+struct InputState {
+	bool up;
+	bool down;
+	bool left;
+	bool right;
+	bool aim;
+	bool fire;
+	bool roll;
+};
+
+enum class PLAYER_STATE {
 	CLIMB,
 	FALLING,
 	FALL_DOWN,

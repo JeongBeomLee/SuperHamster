@@ -23,29 +23,6 @@ void RootSignature::CreateGraphicsRootSignature()
 
 	DEVICE->CreateDescriptorHeap(&samplerHeapDesc, IID_PPV_ARGS(&_samplerHeap));
 
-	// Sampler Descriptor Heap에 Sampler를 넣는다.
-	//D3D12_SAMPLER_DESC samplerDesc = {};
-	//samplerDesc.Filter = D3D12_FILTER_ANISOTROPIC;
-	//samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-	//samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-	//samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-	//samplerDesc.MinLOD = 0;
-	//samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-	//samplerDesc.MipLODBias = 0.0f;
-	//samplerDesc.MaxAnisotropy = 16;
-	//samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
-
-	/*D3D12_SAMPLER_DESC samplerDesc = {};
-	samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-	samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-	samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-	samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-	samplerDesc.MinLOD = 0;
-	samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-	samplerDesc.MipLODBias = 0.0f;
-	samplerDesc.MaxAnisotropy = 1;
-	samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;*/
-
 	D3D12_SAMPLER_DESC samplerDesc = {};
 	samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
 	samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;

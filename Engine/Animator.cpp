@@ -93,11 +93,6 @@ bool Animator::IsAnimationFinished(uint32 idx) const
 {
 	assert(idx < _animClips->size());
 
-	if (idx == ROLL)
-	{
-		return _updateTime >= _animClips->at(idx).duration - 0.1f;
-	}
-
 	if (idx == _clipIndex) {
 		return _updateTime >= _animClips->at(idx).duration;
 	}

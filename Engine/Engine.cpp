@@ -149,8 +149,7 @@ void Engine::CreateRenderTargetGroups()
 	{
 		vector<RenderTarget> rtVec(SWAP_CHAIN_BUFFER_COUNT);
 
-		for (uint32 i = 0; i < SWAP_CHAIN_BUFFER_COUNT; ++i)
-		{
+		for (uint32 i = 0; i < SWAP_CHAIN_BUFFER_COUNT; ++i) {
 			wstring name = L"SwapChainTarget_" + std::to_wstring(i);
 
 			ComPtr<ID3D12Resource> resource;

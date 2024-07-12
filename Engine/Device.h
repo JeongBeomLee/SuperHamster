@@ -10,7 +10,6 @@ public:
 	ComPtr<ID3D12Device> GetDevice()	{ return device; }
 
 private:
-	ComPtr<ID3D12Debug>		debugController;
-	ComPtr<IDXGIFactory>	dxgiFactory;
-	ComPtr<ID3D12Device>	device;
+	ComPtr<IDXGIFactory>		dxgiFactory;
+	ComPtr<ID3D12Device>		device;
 };
