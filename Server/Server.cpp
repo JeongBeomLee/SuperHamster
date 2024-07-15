@@ -219,7 +219,6 @@ int main()
 				players[client_id].id = client_id;
 				players[client_id].prevRemain = 0;
 				players[client_id].socket = client;
-				players[client_id].doRecv();
 				std::cout << "Client connected : " << client_id << std::endl;
 
 				/*u_long on = 1;
