@@ -178,17 +178,6 @@ void ProcessPacket(char* ptr)
                 gameObject->AddComponent(make_shared<PlayerScript2>());
             }
         }
-        //else if (id < MAX_USER) {
-        //   players[id] = OBJECT{ *pieces, 0, 0, 64, 64 };
-        //   players[id].move(my_packet->x, my_packet->y);
-        //   players[id].set_name(my_packet->name);
-        //   players[id].show();
-        //}
-        //else {
-        //   //npc[id - NPC_START].x = my_packet->x;
-        //   //npc[id - NPC_START].y = my_packet->y;
-        //   //npc[id - NPC_START].attr |= BOB_ATTR_VISIBLE;
-        //}
         break;
     }
     case SC_MOVE_PLAYER:

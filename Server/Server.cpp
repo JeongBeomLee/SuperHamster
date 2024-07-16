@@ -27,14 +27,29 @@ PxControllerManager*	pxControllerManager = nullptr;
 PxPvd*					pxPvd				= nullptr;	// 디버그용
 PxPvdSceneClient*		pxPvdScene			= nullptr;	// 디버그용
 
+class SESSION;
+
 void error_display(const char* msg, int err_no);
 int  getNewClientId();
 void disconnect(int clientID);
 void process_packet(int clientID, char* packet);
 void initPhysX();
 void LoadMap(const std::wstring& _strFilePath);
-enum CLIENT_STATE { ST_FREE, ST_INGAME };
+void UpdatePlayerMovement(int clientID, const CS_MOVE_PACKET* p);
+PxVec3 CalculateDisplacement(uint8_t direction);
+void UpdatePlayerState(SESSION& player, uint8_t direction, uint8_t prevDirection);
+void UpdateFireState(SESSION& player, uint8_t direction);
+void UpdateRollState(SESSION& player);
+void UpdatePlayerVelocity(SESSION& player, const PxVec3& disp);
+void UpdateMovementState(SESSION& player);
+void UpdateMovementState(SESSION& player);
+void UpdatePlayerRotation(SESSION& player, const PxVec3& disp);
+void ResetPlayerMovement(SESSION& player);
+void ApplyMovementAndGravity(PxController* controller, const SESSION& player, PxVec3& disp);
+void UpdatePlayerPosition(PxController* controller, SESSION& player);
+void SendMovementUpdate(int clientID);
 
+enum CLIENT_STATE { ST_FREE, ST_INGAME };
 enum PLAYER_STATE
 {
 	CLIMB,
@@ -52,6 +67,19 @@ enum PLAYER_STATE
 
 	END,
 };
+
+enum class PlayerDirection : uint8_t {
+	UP = 1 << 0,
+	DOWN = 1 << 1,
+	RIGHT = 1 << 2,
+	LEFT = 1 << 3,
+	AIM = 1 << 4,
+	FIRE = 1 << 5,
+	ROLL = 1 << 6
+};
+
+const float CAMERA_ROTATION_X = XMConvertToRadians(45.0f);
+const float CAMERA_ROTATION_Y = XMConvertToRadians(-35.0f);
 
 class Timer
 {
@@ -250,7 +278,8 @@ int main()
 		}
 
 		g_Timer.Update();
-		pxDefaultScene->simulate(1.f / 60.f);
+		PxReal deltaTime = g_Timer.GetDeltaTime();
+		pxDefaultScene->simulate(deltaTime);
 		pxDefaultScene->fetchResults(true);
 	}
 
@@ -382,169 +411,7 @@ void process_packet(int clientID, char* packet)
 		}
 		case CS_MOVE: {
 			CS_MOVE_PACKET* p = reinterpret_cast<CS_MOVE_PACKET*>(packet);
-
-			// 클라이언트로부터 받은 이동 정보를 이용하여 캐릭터 컨트롤러 업데이트
-			PxController* playerController = pxControllerManager->getController(clientID);
-			PxVec3 disp(0.0f);
-			Vec3 cameraRotation = Vec3(XMConvertToRadians(45.0f), XMConvertToRadians(-35.0f), 0.0f);
-
-			// 카메라 회전을 고려하여 이동 방향 계산
-			float cosX = cos(cameraRotation.x);
-			float sinX = sin(cameraRotation.x);
-			float cosY = cos(cameraRotation.y);
-			float sinY = sin(cameraRotation.y);
-
-			if (p->direction & 1) { // UP
-				disp.x += sinY * cosX;
-				disp.z += cosY * cosX;
-			}
-
-			if (p->direction & 2) { // DOWN
-				disp.x -= sinY * cosX;
-				disp.z -= cosY * cosX;
-			}
-
-			if (p->direction & 4) { // RIGHT
-				disp.x += cosY;
-				disp.z -= sinY;
-			}
-
-			if (p->direction & 8) { // LEFT
-				disp.x -= cosY;
-				disp.z += sinY;
-			}
-
-			if (p->direction & 16) { // A
-				if (players[clientID].playerState != PLAYER_STATE::AIM && players[clientID].playerState != PLAYER_STATE::FIRE && players[clientID].playerState != PLAYER_STATE::ROLL) {
-					players[clientID].playerState = PLAYER_STATE::AIM;
-					players[clientID].velocity = 0.0f;
-					players[clientID].acceleration = 0.0f;
-				}
-			}
-			else {
-				if (players[clientID].playerState == PLAYER_STATE::AIM)
-					players[clientID].playerState = PLAYER_STATE::IDLE;
-			}
-
-			/*if (((players[clientID].playerState == PLAYER_STATE::AIM && p->direction & 32) || (players[clientID].playerState == PLAYER_STATE::FIRE && p->direction & 32)) && !(p->prevDirection & 32)) {
-				players[clientID].playerState = PLAYER_STATE::FIRE;
-			}
-			else if (players[clientID].playerState == PLAYER_STATE::FIRE) {
-				if (p->direction & 16)
-					players[clientID].playerState = PLAYER_STATE::AIM;
-				else
-					players[clientID].playerState = PLAYER_STATE::IDLE;
-			}*/
-
-			if ((players[clientID].playerState == PLAYER_STATE::AIM && p->direction & 32) && !(p->prevDirection & 32)) {
-				players[clientID].playerState = PLAYER_STATE::FIRE;
-				players[clientID].fireStartTime = g_Timer.GetDeltaTime();
-				players[clientID].velocity = 0.0f;
-				players[clientID].acceleration = 0.0f;
-			}
-			else if (players[clientID].playerState == PLAYER_STATE::FIRE) {
-				if (players[clientID].fireStartTime > 0.01f) {
-					if (p->direction & 16)
-						players[clientID].playerState = PLAYER_STATE::AIM;
-					else
-						players[clientID].playerState = PLAYER_STATE::IDLE;
-
-					players[clientID].fireStartTime = 0.0f;
-				}
-				else
-					players[clientID].fireStartTime += g_Timer.GetDeltaTime();
-
-				players[clientID].velocity = 0.0f;
-				players[clientID].acceleration = 0.0f;
-			}
-
-			if ((p->direction & 64) && !(p->prevDirection & 64) && players[clientID].playerState != PLAYER_STATE::AIM && players[clientID].playerState != PLAYER_STATE::FIRE && players[clientID].playerState != PLAYER_STATE::ROLL) {
-				players[clientID].playerState = PLAYER_STATE::ROLL;
-				players[clientID].rollStartTime = g_Timer.GetDeltaTime();
-			}
-			else if (players[clientID].playerState == PLAYER_STATE::ROLL) {
-				players[clientID].acceleration = 1000.0f;
-				players[clientID].velocity += players[clientID].acceleration * g_Timer.GetDeltaTime() * 50;
-
-				// 구르기 지속 시간 확인
-				if (players[clientID].rollStartTime > 0.012f) {
-					players[clientID].playerState = PLAYER_STATE::IDLE;
-					players[clientID].rollStartTime = 0.0f;
-					players[clientID].velocity = 0.0f;
-					players[clientID].acceleration = 0.0f;
-				}
-				else
-					players[clientID].rollStartTime += g_Timer.GetDeltaTime();
-			}
-
-			if (false == disp.isZero()) {
-				if (disp.magnitudeSquared() > 0.0f) {
-					disp.normalize();
-
-					if (players[clientID].playerState != PLAYER_STATE::AIM && players[clientID].playerState != PLAYER_STATE::FIRE && players[clientID].playerState != PLAYER_STATE::ROLL) {
-						players[clientID].acceleration = disp.magnitude() * 1000.0f;
-						players[clientID].velocity += players[clientID].acceleration * g_Timer.GetDeltaTime() * 50;
-						players[clientID].velocity = std::clamp(players[clientID].velocity, 0.0f, 500.0f);
-
-						if (players[clientID].velocity <= 0.0f)
-							players[clientID].playerState = PLAYER_STATE::IDLE;
-						else if (players[clientID].velocity > 0.0f && players[clientID].velocity <= 150.0f)
-							players[clientID].playerState = PLAYER_STATE::WALK;
-						else if (players[clientID].velocity > 150.0f && players[clientID].velocity <= 350.0f)
-							players[clientID].playerState = PLAYER_STATE::RUN_SLOW;
-						else if (players[clientID].velocity > 350.0f)
-							players[clientID].playerState = PLAYER_STATE::RUN_FAST;
-					}
-
-					PxReal targetAngle = PxAtan2(-disp.x, -disp.z);
-					Vec3 currentRotation = players[clientID].dir;
-					PxReal currentAngle = currentRotation.y;
-
-					PxReal deltaAngle = targetAngle - currentAngle;
-					if (deltaAngle > PxPi)
-						deltaAngle -= PxTwoPi;
-					else if (deltaAngle < -PxPi)
-						deltaAngle += PxTwoPi;
-
-					PxReal interpolationFactor = players[clientID].rotationSpeed * g_Timer.GetDeltaTime();
-					PxReal interpolatedAngle = currentAngle + deltaAngle * interpolationFactor;
-
-					if (interpolatedAngle > PxPi)
-						interpolatedAngle -= PxTwoPi;
-					else if (interpolatedAngle < -PxPi)
-						interpolatedAngle += PxTwoPi;
-
-					Vec3 Rotation = players[clientID].dir;
-					Rotation.y = interpolatedAngle;
-					players[clientID].dir = Rotation;
-				}
-			}
-			else {
-				players[clientID].velocity = 0.0f;
-				players[clientID].acceleration = 0.0f;
-				if (players[clientID].playerState != PLAYER_STATE::AIM && players[clientID].playerState != PLAYER_STATE::FIRE && players[clientID].playerState != PLAYER_STATE::ROLL) {
-					players[clientID].playerState = PLAYER_STATE::IDLE;
-				}
-			}
-
-			disp *= players[clientID].velocity * g_Timer.GetDeltaTime() * 100.0f;
-			disp.y -= 9.8f * g_Timer.GetDeltaTime() * players[clientID].weight * 100.0f;
-
-			PxControllerFilters filters;
-			playerController->move(disp, 0.001f, g_Timer.GetDeltaTime(), filters);
-
-			Vec3 Position = players[clientID].pos;
-			Position.x = playerController->getPosition().x;
-			Position.y = playerController->getPosition().y - 50.f;
-			Position.z = playerController->getPosition().z;
-
-			players[clientID].pos = Position;
-			players[clientID].send_MovePlayerPacket(clientID);
-			for (auto& other : players) {
-				if (ST_INGAME != other.state) continue;
-				if (other.id == clientID) continue;
-				other.send_MovePlayerPacket(clientID);
-			}
+			UpdatePlayerMovement(clientID, p);
 		}
 	}
 }
@@ -563,11 +430,6 @@ void initPhysX()
 #else
 	pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true);
 #endif // _DEBUG
-
-
-	
-
-	//pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true);
 
 	// PhysX Scene 생성
 	PxSceneDesc sceneDesc(pxPhysics->getTolerancesScale());
@@ -768,6 +630,191 @@ void LoadMap(const std::wstring& _strFilePath)
 					}
 				}
 			}
+		}
+	}
+}
+
+void UpdatePlayerMovement(int clientID, const CS_MOVE_PACKET* p) 
+{
+	PxController* playerController = pxControllerManager->getController(clientID);
+	SESSION& player = players[clientID];
+
+	PxVec3 disp = CalculateDisplacement(p->direction);
+	UpdatePlayerState(player, p->direction, p->prevDirection);
+
+	if (!disp.isZero()) {
+		UpdatePlayerVelocity(player, disp);
+		UpdatePlayerRotation(player, disp);
+	}
+	else {
+		ResetPlayerMovement(player);
+	}
+
+	ApplyMovementAndGravity(playerController, player, disp);
+	UpdatePlayerPosition(playerController, player);
+	SendMovementUpdate(clientID);
+}
+
+PxVec3 CalculateDisplacement(uint8_t direction) 
+{
+	PxVec3 disp(0.0f);
+	float cosX = cos(CAMERA_ROTATION_X);
+	float sinX = sin(CAMERA_ROTATION_X);
+	float cosY = cos(CAMERA_ROTATION_Y);
+	float sinY = sin(CAMERA_ROTATION_Y);
+
+	if (direction & static_cast<uint8_t>(PlayerDirection::UP)) {
+		disp.x += sinY * cosX;
+		disp.z += cosY * cosX;
+	}
+	if (direction & static_cast<uint8_t>(PlayerDirection::DOWN)) {
+		disp.x -= sinY * cosX;
+		disp.z -= cosY * cosX;
+	}
+	if (direction & static_cast<uint8_t>(PlayerDirection::RIGHT)) {
+		disp.x += cosY;
+		disp.z -= sinY;
+	}
+	if (direction & static_cast<uint8_t>(PlayerDirection::LEFT)) {
+		disp.x -= cosY;
+		disp.z += sinY;
+	}
+	return disp;
+}
+
+void UpdatePlayerState(SESSION& player, uint8_t direction, uint8_t prevDirection) 
+{
+	if (direction & static_cast<uint8_t>(PlayerDirection::AIM)) {
+		if (player.playerState != PLAYER_STATE::AIM && player.playerState != PLAYER_STATE::FIRE && player.playerState != PLAYER_STATE::ROLL) {
+			player.playerState = PLAYER_STATE::AIM;
+			player.velocity = 0.0f;
+			player.acceleration = 0.0f;
+		}
+	}
+	else if (player.playerState == PLAYER_STATE::AIM) {
+		player.playerState = PLAYER_STATE::IDLE;
+	}
+
+	if ((player.playerState == PLAYER_STATE::AIM && direction & static_cast<uint8_t>(PlayerDirection::FIRE)) &&
+		!(prevDirection & static_cast<uint8_t>(PlayerDirection::FIRE))) {
+		player.playerState = PLAYER_STATE::FIRE;
+		player.fireStartTime = g_Timer.GetDeltaTime();
+		player.velocity = 0.0f;
+		player.acceleration = 0.0f;
+	}
+	else if (player.playerState == PLAYER_STATE::FIRE) {
+		UpdateFireState(player, direction);
+	}
+
+	if ((direction & static_cast<uint8_t>(PlayerDirection::ROLL)) &&
+		!(prevDirection & static_cast<uint8_t>(PlayerDirection::ROLL)) &&
+		player.playerState != PLAYER_STATE::AIM &&
+		player.playerState != PLAYER_STATE::FIRE &&
+		player.playerState != PLAYER_STATE::ROLL) {
+		player.playerState = PLAYER_STATE::ROLL;
+		player.rollStartTime = g_Timer.GetDeltaTime();
+	}
+	else if (player.playerState == PLAYER_STATE::ROLL) {
+		UpdateRollState(player);
+	}
+}
+
+void UpdateFireState(SESSION& player, uint8_t direction) 
+{
+	if (player.fireStartTime > 0.01f) {
+		player.playerState = (direction & static_cast<uint8_t>(PlayerDirection::AIM)) ? PLAYER_STATE::AIM : PLAYER_STATE::IDLE;
+		player.fireStartTime = 0.0f;
+	}
+	else {
+		player.fireStartTime += g_Timer.GetDeltaTime();
+	}
+	player.velocity = 0.0f;
+	player.acceleration = 0.0f;
+}
+
+void UpdateRollState(SESSION& player) 
+{
+	player.acceleration = 500.0f;
+	player.velocity += player.acceleration * g_Timer.GetDeltaTime() * 50;
+
+	if (player.rollStartTime > 0.012f) {
+		player.playerState = PLAYER_STATE::IDLE;
+		player.rollStartTime = 0.0f;
+		player.velocity = 0.0f;
+		player.acceleration = 0.0f;
+	}
+	else {
+		player.rollStartTime += g_Timer.GetDeltaTime();
+	}
+}
+
+void UpdatePlayerVelocity(SESSION& player, const PxVec3& disp) 
+{
+	if (player.playerState != PLAYER_STATE::AIM && player.playerState != PLAYER_STATE::FIRE && player.playerState != PLAYER_STATE::ROLL) {
+		player.acceleration = disp.magnitude() * 1000.0f;
+		player.velocity += player.acceleration * g_Timer.GetDeltaTime() * 50;
+		player.velocity = std::clamp(player.velocity, 0.0f, 500.0f);
+		UpdateMovementState(player);
+	}
+}
+
+void UpdateMovementState(SESSION& player) 
+{
+	if (player.velocity <= 0.0f) player.playerState = PLAYER_STATE::IDLE;
+	else if (player.velocity <= 150.0f) player.playerState = PLAYER_STATE::WALK;
+	else if (player.velocity <= 350.0f) player.playerState = PLAYER_STATE::RUN_SLOW;
+	else player.playerState = PLAYER_STATE::RUN_FAST;
+}
+
+void UpdatePlayerRotation(SESSION& player, const PxVec3& disp) 
+{
+	PxReal targetAngle = PxAtan2(-disp.x, -disp.z);
+	PxReal currentAngle = player.dir.y;
+	PxReal deltaAngle = targetAngle - currentAngle;
+
+	if (deltaAngle > PxPi) deltaAngle -= PxTwoPi;
+	else if (deltaAngle < -PxPi) deltaAngle += PxTwoPi;
+
+	PxReal interpolationFactor = player.rotationSpeed * g_Timer.GetDeltaTime();
+	PxReal interpolatedAngle = currentAngle + deltaAngle * interpolationFactor;
+
+	if (interpolatedAngle > PxPi) interpolatedAngle -= PxTwoPi;
+	else if (interpolatedAngle < -PxPi) interpolatedAngle += PxTwoPi;
+
+	player.dir.y = interpolatedAngle;
+}
+
+void ResetPlayerMovement(SESSION& player) 
+{
+	player.velocity = 0.0f;
+	player.acceleration = 0.0f;
+	if (player.playerState != PLAYER_STATE::AIM && player.playerState != PLAYER_STATE::FIRE && player.playerState != PLAYER_STATE::ROLL) {
+		player.playerState = PLAYER_STATE::IDLE;
+	}
+}
+
+void ApplyMovementAndGravity(PxController* controller, const SESSION& player, PxVec3& disp) 
+{
+	disp *= player.velocity * g_Timer.GetDeltaTime() * 100.0f;
+	disp.y -= 9.8f * g_Timer.GetDeltaTime() * player.weight * 100.0f;
+
+	PxControllerFilters filters;
+	controller->move(disp, 0.001f, g_Timer.GetDeltaTime(), filters);
+}
+
+void UpdatePlayerPosition(PxController* controller, SESSION& player) 
+{
+	player.pos.x = controller->getPosition().x;
+	player.pos.y = controller->getPosition().y - 50.f;
+	player.pos.z = controller->getPosition().z;
+}
+
+void SendMovementUpdate(int clientID) 
+{
+	players[clientID].send_MovePlayerPacket(clientID);
+	for (auto& other : players) {
+		if (other.state == ST_INGAME && other.id != clientID) {
+			other.send_MovePlayerPacket(clientID);
 		}
 	}
 }
