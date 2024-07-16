@@ -162,7 +162,11 @@ public:
 		acceleration = 0;
 		weight = 100.f;
 		rotationSpeed = 120.0f;
-		//last_move_time = 0;
+		rollStartTime = 0.0f;
+		fireStartTime = 0.0f;
+		rollDistance = 0.0f;
+		rollSpeed = 0.0f;
+		rollDuration = 0.0f;
 	}
 
 	int doRecv() 
@@ -208,6 +212,11 @@ public:
 	float 			rotationSpeed;
 	float			rollStartTime;
 	float			fireStartTime;
+
+	float			rollDistance;
+	float			rollSpeed;
+	float			rollDuration;
+	Vec3			rollDirection;
 	//int				last_move_time;
 };
 

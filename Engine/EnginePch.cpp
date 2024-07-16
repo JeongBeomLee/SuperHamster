@@ -195,12 +195,10 @@ void ProcessPacket(char* ptr)
 
         if (other_id == g_myid) {
             PlayerScript* playerScript = reinterpret_cast<PlayerScript*>(gameObject->GetScript().get());
-            playerScript->SetVelocity(my_packet->velocity);
             playerScript->SetState(static_cast<PLAYER_STATE>(my_packet->state));
         }
         else {
             PlayerScript2* playerScript = reinterpret_cast<PlayerScript2*>(gameObject->GetScript().get());
-            playerScript->SetVelocity(my_packet->velocity);
             playerScript->SetState(static_cast<PLAYER_STATE>(my_packet->state));
         }
         break;
