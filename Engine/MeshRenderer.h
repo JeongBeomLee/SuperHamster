@@ -7,8 +7,7 @@ class Material;
 // [32][32]
 union InstanceID
 {
-	struct
-	{
+	struct {
 		uint32 meshID;
 		uint32 materialID;
 	};

@@ -10,40 +10,35 @@
 
 void Scene::Awake()
 {
-	for (const shared_ptr<GameObject>& gameObject : _gameObjects)
-	{
+	for (const shared_ptr<GameObject>& gameObject : _gameObjects) {
 		gameObject->Awake();
 	}
 }
 
 void Scene::Start()
 {
-	for (const shared_ptr<GameObject>& gameObject : _gameObjects)
-	{
+	for (const shared_ptr<GameObject>& gameObject : _gameObjects) {
 		gameObject->Start();
 	}
 }
 
 void Scene::Update()
 {
-	for (const shared_ptr<GameObject>& gameObject : _gameObjects)
-	{
+	for (const shared_ptr<GameObject>& gameObject : _gameObjects) {
 		gameObject->Update();
 	}
 }
 
 void Scene::LateUpdate()
 {
-	for (const shared_ptr<GameObject>& gameObject : _gameObjects)
-	{
+	for (const shared_ptr<GameObject>& gameObject : _gameObjects) {
 		gameObject->LateUpdate();
 	}
 }
 
 void Scene::FinalUpdate()
 {
-	for (const shared_ptr<GameObject>& gameObject : _gameObjects)
-	{
+	for (const shared_ptr<GameObject>& gameObject : _gameObjects) {
 		gameObject->FinalUpdate();
 	}
 }
@@ -59,17 +54,11 @@ shared_ptr<Camera> Scene::GetMainCamera()
 void Scene::Render()
 {
 	PushLightData();
-
 	ClearRTV();
-
 	RenderShadow(); 
-	
 	RenderDeferred();
-
 	RenderLights();	
-
 	RenderFinal();
-
 	RenderForward();
 }
 
@@ -90,8 +79,7 @@ void Scene::RenderShadow()
 {
 	gEngine->GetRTGroup(RENDER_TARGET_GROUP_TYPE::SHADOW)->OMSetRenderTargets();
 
-	for (auto& light : _lights)
-	{
+	for (auto& light : _lights) {
 		if (light->GetLightType() != LIGHT_TYPE::DIRECTIONAL_LIGHT)
 			continue;
 
@@ -122,8 +110,7 @@ void Scene::RenderLights()
 	gEngine->GetRTGroup(RENDER_TARGET_GROUP_TYPE::LIGHTING)->OMSetRenderTargets();
 
 	// 광원을 그린다.
-	for (auto& light : _lights)
-	{
+	for (auto& light : _lights) {
 		light->Render();
 	}
 
@@ -145,8 +132,7 @@ void Scene::RenderForward()
 	shared_ptr<Camera> mainCamera = _cameras[0];
 	mainCamera->Render_Forward();
 
-	for (auto& camera : _cameras)
-	{
+	for (auto& camera : _cameras) {
 		if (camera == mainCamera)
 			continue;
 
@@ -159,8 +145,7 @@ void Scene::PushLightData()
 {
 	LightParams lightParams = {};
 
-	for (auto& light : _lights)
-	{
+	for (auto& light : _lights) {
 		const LightInfo& lightInfo = light->GetLightInfo();
 
 		light->SetLightIndex(lightParams.lightCount);
@@ -174,12 +159,10 @@ void Scene::PushLightData()
 
 void Scene::AddGameObject(shared_ptr<GameObject> gameObject)
 {
-	if (gameObject->GetCamera() != nullptr)
-	{
+	if (gameObject->GetCamera() != nullptr) {
 		_cameras.push_back(gameObject->GetCamera());
 	}
-	else if (gameObject->GetLight() != nullptr)
-	{
+	else if (gameObject->GetLight() != nullptr) {
 		_lights.push_back(gameObject->GetLight());
 	}
 

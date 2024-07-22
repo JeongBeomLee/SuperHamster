@@ -45,29 +45,22 @@ void Camera::SortGameObject()
 	_vecDeferred.clear();
 	_vecParticle.clear();
 
-	for (auto& gameObject : gameObjects)
-	{
+	for (auto& gameObject : gameObjects) {
 		if (gameObject->GetMeshRenderer() == nullptr && gameObject->GetParticleSystem() == nullptr)
 			continue;
 
 		if (IsCulled(gameObject->GetLayerIndex()))
 			continue;
 
-		if (gameObject->GetCheckFrustum())
-		{
+		if (gameObject->GetCheckFrustum()) {
 			if (_frustum.ContainsSphere(
 				gameObject->GetTransform()->GetWorldPosition(),
-				gameObject->GetTransform()->GetBoundingSphereRadius()) == false)
-			{
-				continue;
-			}
+				gameObject->GetTransform()->GetBoundingSphereRadius()) == false) continue;
 		}
 
-		if (gameObject->GetMeshRenderer())
-		{
+		if (gameObject->GetMeshRenderer()) {
 			SHADER_TYPE shaderType = gameObject->GetMeshRenderer()->GetMaterial()->GetShader()->GetShaderType();
-			switch (shaderType)
-			{
+			switch (shaderType) {
 			case SHADER_TYPE::DEFERRED:
 				_vecDeferred.push_back(gameObject);
 				break;
@@ -76,8 +69,7 @@ void Camera::SortGameObject()
 				break;
 			}
 		}
-		else
-		{
+		else {
 			_vecParticle.push_back(gameObject);
 		}
 	}

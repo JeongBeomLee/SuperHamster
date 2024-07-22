@@ -136,7 +136,9 @@ void ProcessPacket(char* ptr)
 		g_myid = packet->id;
 
 		Scene* scene = GET_SINGLE(SceneManager)->GetActiveScene().get();
-		shared_ptr<MeshData> hamsterMeshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData", L"..\\Resources\\FBX\\Hamster" + to_wstring(0) + L".meshdata");
+		shared_ptr<MeshData> hamsterMeshData = GET_SINGLE(Resources)->Load<MeshData>(
+            L"Hamster" + to_wstring(g_myid) + L"_MeshData",
+            L"..\\Resources\\FBX\\Hamster" + to_wstring(g_myid) + L".meshdata");
 		vector<shared_ptr<GameObject>> hamsterObjects = hamsterMeshData->Instantiate();
 		for (auto& object : hamsterObjects) {
             object->SetName(L"Hamster" + to_wstring(g_myid));
@@ -153,10 +155,11 @@ void ProcessPacket(char* ptr)
         shared_ptr<MeshData> gunMeshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 02.fbx");
         vector<shared_ptr<GameObject>> gunObjects = gunMeshData->Instantiate();
         for (auto& object : gunObjects) {
-            object->SetName(L"Gun1");
+            object->SetName(L"Hamster" + to_wstring(g_myid) + L"_Gun2");
             object->SetCheckFrustum(false);
             object->SetStatic(false);
             object->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+            object->GetTransform()->SetLocalScale(Vec3(0.5f, 0.5f, 0.5f));
             object->GetTransform()->SetLocalRotation(Vec3(XMConvertToRadians(180.f), XMConvertToRadians(-20.f), XMConvertToRadians(90.f)));
             object->AttachToBone(scene->GetGameObjectByName(L"Hamster" + to_wstring(g_myid)), L"mixamorig:RightHand");
 
@@ -171,10 +174,11 @@ void ProcessPacket(char* ptr)
 
         if (id != g_myid) {
             Scene* scene = GET_SINGLE(SceneManager)->GetActiveScene().get();
-            shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData2", L"..\\Resources\\FBX\\Hamster" + to_wstring(0) + L".meshdata");
 
-            vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
-
+            shared_ptr<MeshData> hamsterMeshData = GET_SINGLE(Resources)->Load<MeshData>(
+                L"Hamster" + to_wstring(id) + L"_MeshData",
+                L"..\\Resources\\FBX\\Hamster" + to_wstring(id) + L".meshdata");
+            vector<shared_ptr<GameObject>> gameObjects = hamsterMeshData->Instantiate();
             for (auto& gameObject : gameObjects) {
                 gameObject->SetName(L"Hamster" + to_wstring(id));
                 gameObject->SetCheckFrustum(false);
@@ -190,7 +194,7 @@ void ProcessPacket(char* ptr)
             shared_ptr<MeshData> gunMeshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 02.fbx");
             vector<shared_ptr<GameObject>> gunObjects = gunMeshData->Instantiate();
             for (auto& object : gunObjects) {
-                object->SetName(L"Gun2");
+                object->SetName(L"Hamster" + to_wstring(id) + L"_Gun2");
                 object->SetCheckFrustum(false);
                 object->SetStatic(false);
                 object->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
@@ -204,9 +208,9 @@ void ProcessPacket(char* ptr)
     }
     case SC_MOVE_PLAYER: {
         SC_MOVE_PLAYER_PACKET* my_packet = reinterpret_cast<SC_MOVE_PLAYER_PACKET*>(ptr);
-        int other_id = my_packet->id;
+        int id = my_packet->id;
 
-        GameObject* gameObject = GET_SINGLE(SceneManager)->GetActiveScene()->GetGameObjectByName(L"Hamster" + to_wstring(other_id)).get();
+        GameObject* gameObject = GET_SINGLE(SceneManager)->GetActiveScene()->GetGameObjectByName(L"Hamster" + to_wstring(id)).get();
         if (gameObject == nullptr) 
             return;
 
@@ -214,7 +218,7 @@ void ProcessPacket(char* ptr)
         gameObject->GetTransform()->SetLocalRotation(my_packet->dir);
         gameObject->GetTransform()->SetLocalScale(my_packet->scale);
 
-        if (other_id == g_myid) {
+        if (id == g_myid) {
             PlayerScript* playerScript = reinterpret_cast<PlayerScript*>(gameObject->GetScript().get());
             playerScript->SetState(static_cast<PLAYER_STATE>(my_packet->state));
         }

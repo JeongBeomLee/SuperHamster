@@ -41,8 +41,7 @@ void InstancingManager::Render(vector<shared_ptr<GameObject>>& gameObjects)
 
 void InstancingManager::ClearBuffer()
 {
-	for (auto& pair : _buffers)
-	{
+	for (auto& pair : _buffers) {
 		shared_ptr<InstancingBuffer>& buffer = pair.second;
 		buffer->Clear();
 	}
