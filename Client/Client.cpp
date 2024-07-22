@@ -94,10 +94,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
 
         if (false == init) {
-            CS_LOGIN_PACKET p;
-            p.size = sizeof(p);
-            p.type = CS_LOGIN;
-            send_packet(&p);
+            send_login_packet();
             init = true;
 		}
         
@@ -120,6 +117,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         game->Update();
     }
     
+    send_logout_packet();
     game->Release();
     closesocket(serverSocket);
     WSACleanup();

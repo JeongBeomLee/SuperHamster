@@ -16,7 +16,6 @@ public:
 	const Vec3& GetLocalRotation() { return _localRotation; }
 	const Vec3& GetLocalScale() { return _localScale; }
 
-	// TEMP
 	float GetBoundingSphereRadius() { return max(max(_localScale.x, _localScale.y), _localScale.z); }
 
 	const Matrix& GetLocalToWorldMatrix() { return _matWorld; }
@@ -39,6 +38,10 @@ public:
 	void SetParent(shared_ptr<Transform> parent) { _parent = parent; }
 	weak_ptr<Transform> GetParent() { return _parent; }
 
+public:
+	void AttachToBone(const std::shared_ptr<GameObject>& parent, const std::wstring& boneName);
+	const Matrix& GetBoneMatrix(const std::wstring& boneName) const;
+
 private:
 	// Parent ±‚¡ÿ
 	Vec3 _localPosition = {};
@@ -49,5 +52,7 @@ private:
 	Matrix _matWorld = {};
 
 	weak_ptr<Transform> _parent;
+	std::weak_ptr<GameObject> _parentObject;
+	std::wstring _attachedBoneName;
 };
 

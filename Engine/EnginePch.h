@@ -223,3 +223,5 @@ void error_display(const char* msg, int err_no);
 void send_packet(void* packet);
 void process_data(char* net_buf, size_t io_byte);
 void ProcessPacket(char* ptr);
+void send_login_packet();
+void send_logout_packet();

@@ -10,26 +10,21 @@ void InstancingManager::Render(vector<shared_ptr<GameObject>>& gameObjects)
 {
 	map<uint64, vector<shared_ptr<GameObject>>> cache;
 
-	for (shared_ptr<GameObject>& gameObject : gameObjects)
-	{
+	for (shared_ptr<GameObject>& gameObject : gameObjects) {
 		const uint64 instanceId = gameObject->GetMeshRenderer()->GetInstanceID();
 		cache[instanceId].push_back(gameObject);
 	}
 
-	for (auto& pair : cache)
-	{
+	for (auto& pair : cache) {
 		const vector<shared_ptr<GameObject>>& vec = pair.second;
 
-		if (vec.size() == 1)
-		{
+		if (vec.size() == 1) {
 			vec[0]->GetMeshRenderer()->Render();
 		}
-		else
-		{
+		else {
 			const uint64 instanceId = pair.first;
 
-			for (const shared_ptr<GameObject>& gameObject : vec)
-			{
+			for (const shared_ptr<GameObject>& gameObject : vec) {
 				InstancingParams params;
 				params.matWorld = gameObject->GetTransform()->GetLocalToWorldMatrix();
 				params.matWV = params.matWorld * Camera::S_MatView;

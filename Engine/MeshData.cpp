@@ -443,8 +443,7 @@ vector<shared_ptr<GameObject>> MeshData::Instantiate()
 {
 	vector<shared_ptr<GameObject>> v;
 
-	for (MeshRenderInfo& info : _meshRenders)
-	{
+	for (MeshRenderInfo& info : _meshRenders) {
 		shared_ptr<GameObject> gameObject = make_shared<GameObject>();
 		gameObject->AddComponent(make_shared<Transform>());
 		gameObject->AddComponent(make_shared<MeshRenderer>());
@@ -453,8 +452,7 @@ vector<shared_ptr<GameObject>> MeshData::Instantiate()
 		for (uint32 i = 0; i < info.materials.size(); i++)
 			gameObject->GetMeshRenderer()->SetMaterial(info.materials[i], i);
 
-		if (info.mesh->IsAnimMesh())
-		{
+		if (info.mesh->IsAnimMesh()) {
 			shared_ptr<Animator> animator = make_shared<Animator>();
 			gameObject->AddComponent(animator);
 			animator->SetBones(info.mesh->GetBones());
@@ -463,7 +461,6 @@ vector<shared_ptr<GameObject>> MeshData::Instantiate()
 
 		v.push_back(gameObject);
 	}
-
 
 	return v;
 }

@@ -6,6 +6,7 @@
 #include "Mesh.h"
 #include "MeshRenderer.h"
 #include "StructuredBuffer.h"
+#include "Transform.h"
 
 Animator::Animator() : Component(COMPONENT_TYPE::ANIMATOR)
 {
@@ -41,6 +42,8 @@ void Animator::FinalUpdate()
 
 	_blendingRatio = _blendingUpdateTime / _blendingTime;
 	_blendingRatio = min(_blendingRatio, 1.f);
+
+	UpdateBoneFinalMatrices();
 }
 
 void Animator::SetAnimClip(const vector<AnimClipInfo>* animClips)
@@ -93,11 +96,6 @@ bool Animator::IsAnimationFinished(uint32 idx) const
 {
 	assert(idx < _animClips->size());
 
-	if (idx == ROLL)
-	{
-		return _updateTime >= _animClips->at(idx).duration - 0.1f;
-	}
-
 	if (idx == _clipIndex) {
 		return _updateTime >= _animClips->at(idx).duration;
 	}
@@ -111,4 +109,31 @@ bool Animator::IsAnimationFinished(uint32 idx) const
 	}
 }
 
+void Animator::UpdateBoneFinalMatrices()
+{
+	if (_clipIndex == -1 || _bones == nullptr || _animClips == nullptr)
+		return;
 
+	const AnimClipInfo& animClip = _animClips->at(_clipIndex);
+	const vector<BoneInfo>& bones = *_bones;
+	_boneFinalMatrices.resize(bones.size());
+
+	for (size_t i = 0; i < bones.size(); ++i) {
+		const BoneInfo& bone = bones[i];
+		const vector<KeyFrameInfo>& keyFrames = animClip.keyFrames[i];
+
+		if (_frame >= keyFrames.size())
+			continue;
+
+		const KeyFrameInfo& frameA = keyFrames[_frame];
+		const KeyFrameInfo& frameB = keyFrames[_nextFrame];
+
+		Vec3 scale = Vec3::Lerp(frameA.scale, frameB.scale, _frameRatio);
+		SimpleMath::Quaternion rotation = SimpleMath::Quaternion::Slerp(frameA.rotation, frameB.rotation, _frameRatio);
+		Vec3 translation = Vec3::Lerp(frameA.translate, frameB.translate, _frameRatio);
+
+		Matrix matBone = Matrix::CreateScale(scale) * Matrix::CreateFromQuaternion(rotation) * Matrix::CreateTranslation(translation);
+
+		_boneFinalMatrices[i] = matBone;
+	}
+}

@@ -9,6 +9,9 @@
 #include "Resources.h"
 #include "MeshData.h"
 #include "PlayerScript.h"
+#include "MeshRenderer.h"
+#include "Mesh.h"
+#include "Animator.h"
 
 unique_ptr<Engine> gEngine = make_unique<Engine>();
 unique_ptr<Vec3> cameraPos = make_unique<Vec3>();
@@ -127,42 +130,48 @@ void process_data(char* net_buf, size_t io_byte)
 void ProcessPacket(char* ptr)
 {
     static bool first_time = true;
-    switch (ptr[1])
-    {
-    case SC_LOGIN_INFO:
-    {
+    switch (ptr[1]) {
+    case SC_LOGIN_INFO: {
 		SC_LOGIN_INFO_PACKET* packet = reinterpret_cast<SC_LOGIN_INFO_PACKET*>(ptr);
 		g_myid = packet->id;
 
 		Scene* scene = GET_SINGLE(SceneManager)->GetActiveScene().get();
-		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster" + to_wstring(g_myid) + L".fbx");
-		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData", L"..\\Resources\\FBX\\Hamster" + to_wstring(g_myid) + L".meshdata");
+		shared_ptr<MeshData> hamsterMeshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData", L"..\\Resources\\FBX\\Hamster" + to_wstring(0) + L".meshdata");
+		vector<shared_ptr<GameObject>> hamsterObjects = hamsterMeshData->Instantiate();
+		for (auto& object : hamsterObjects) {
+            object->SetName(L"Hamster" + to_wstring(g_myid));
+            object->SetCheckFrustum(false);
+            object->GetTransform()->SetLocalPosition(packet->pos);
+            object->GetTransform()->SetLocalScale(packet->scale);
+            object->GetTransform()->SetLocalRotation(packet->dir);
+            object->SetStatic(false);
 
-		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
-
-		for (auto& gameObject : gameObjects) {
-			gameObject->SetName(L"Hamster" + to_wstring(g_myid));
-			gameObject->SetCheckFrustum(false);
-			gameObject->GetTransform()->SetLocalPosition(packet->pos);
-			gameObject->GetTransform()->SetLocalScale(packet->scale);
-			gameObject->GetTransform()->SetLocalRotation(packet->dir);
-			gameObject->SetStatic(false);
-
-			scene->AddGameObject(gameObject);
-			gameObject->AddComponent(make_shared<PlayerScript>());
+			scene->AddGameObject(object);
+            object->AddComponent(make_shared<PlayerScript>());
 		}
+
+        shared_ptr<MeshData> gunMeshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 02.fbx");
+        vector<shared_ptr<GameObject>> gunObjects = gunMeshData->Instantiate();
+        for (auto& object : gunObjects) {
+            object->SetName(L"Gun1");
+            object->SetCheckFrustum(false);
+            object->SetStatic(false);
+            object->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+            object->GetTransform()->SetLocalRotation(Vec3(XMConvertToRadians(180.f), XMConvertToRadians(-20.f), XMConvertToRadians(90.f)));
+            object->AttachToBone(scene->GetGameObjectByName(L"Hamster" + to_wstring(g_myid)), L"mixamorig:RightHand");
+
+            scene->AddGameObject(object);
+        }
     }
     break;
 
-    case SC_ADD_PLAYER:
-    {
+    case SC_ADD_PLAYER: {
         SC_ADD_PLAYER_PACKET* packet = reinterpret_cast<SC_ADD_PLAYER_PACKET*>(ptr);
         int id = packet->id;
 
         if (id != g_myid) {
             Scene* scene = GET_SINGLE(SceneManager)->GetActiveScene().get();
-            //shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Hamster" + to_wstring(id) + L".fbx");
-            shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData2", L"..\\Resources\\FBX\\Hamster" + to_wstring(id) + L".meshdata");
+            shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"HamsterMeshData2", L"..\\Resources\\FBX\\Hamster" + to_wstring(0) + L".meshdata");
 
             vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
 
@@ -177,11 +186,23 @@ void ProcessPacket(char* ptr)
                 scene->AddGameObject(gameObject);
                 gameObject->AddComponent(make_shared<PlayerScript2>());
             }
+
+            shared_ptr<MeshData> gunMeshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 02.fbx");
+            vector<shared_ptr<GameObject>> gunObjects = gunMeshData->Instantiate();
+            for (auto& object : gunObjects) {
+                object->SetName(L"Gun2");
+                object->SetCheckFrustum(false);
+                object->SetStatic(false);
+                object->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+                object->GetTransform()->SetLocalRotation(Vec3(XMConvertToRadians(180.f), XMConvertToRadians(-20.f), XMConvertToRadians(90.f)));
+                object->AttachToBone(scene->GetGameObjectByName(L"Hamster" + to_wstring(id)), L"mixamorig:RightHand");
+
+                scene->AddGameObject(object);
+            }
         }
         break;
     }
-    case SC_MOVE_PLAYER:
-    {
+    case SC_MOVE_PLAYER: {
         SC_MOVE_PLAYER_PACKET* my_packet = reinterpret_cast<SC_MOVE_PLAYER_PACKET*>(ptr);
         int other_id = my_packet->id;
 
@@ -204,25 +225,33 @@ void ProcessPacket(char* ptr)
         break;
     }
 
-    case SC_REMOVE_PLAYER:
-    {
+    case SC_REMOVE_PLAYER: {
         SC_REMOVE_PLAYER_PACKET* my_packet = reinterpret_cast<SC_REMOVE_PLAYER_PACKET*>(ptr);
         int other_id = my_packet->id;
-        /*if (other_id == g_myid) {
-            avatar.hide();
-        }
-        else {
-            players.erase(other_id);
-        }*/
-        //else if (other_id < MAX_USER) {
-        //   players.erase(other_id);
-        //}
-        //else {
-        //   //      npc[other_id - NPC_START].attr &= ~BOB_ATTR_VISIBLE;
-        //}
+
+        Scene* scene = GET_SINGLE(SceneManager)->GetActiveScene().get();
+        scene->RemoveGameObject(scene->GetGameObjectByName(L"Hamster" + to_wstring(other_id)));
         break;
     }
     default:
         printf("Unknown PACKET type [%d]\n", ptr[1]);
     }
+}
+
+void send_login_packet()
+{
+    CS_LOGIN_PACKET p;
+    p.size = sizeof(p);
+    p.type = CS_LOGIN; 
+    send_packet(&p);
+    cout << "send login packet" << endl;
+}
+
+void send_logout_packet()
+{
+    CS_LOGOUT_PACKET p;
+    p.size = sizeof(p);
+    p.type = CS_LOGOUT;
+    send_packet(&p);
+    cout << "send logout packet" << endl;
 }

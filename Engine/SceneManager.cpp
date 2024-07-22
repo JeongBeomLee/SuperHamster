@@ -200,32 +200,6 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	}
 #pragma endregion
 
-#pragma region Object
-	{
-		/*shared_ptr<GameObject> obj = make_shared<GameObject>();
-		obj->SetName(L"OBJ");
-		obj->AddComponent(make_shared<Transform>());
-		obj->AddComponent(make_shared<SphereCollider>());
-		obj->GetTransform()->SetLocalScale(Vec3(100.f, 100.f, 100.f));
-		obj->GetTransform()->SetLocalPosition(Vec3(0, 0.f, 500.f));
-		obj->SetStatic(false);
-		shared_ptr<MeshRenderer> meshRenderer = make_shared<MeshRenderer>();
-		{
-			shared_ptr<Mesh> sphereMesh = GET_SINGLE(Resources)->LoadSphereMesh();
-			meshRenderer->SetMesh(sphereMesh);
-		}
-		{
-			shared_ptr<Material> material = GET_SINGLE(Resources)->Get<Material>(L"GameObject");
-			meshRenderer->SetMaterial(material->Clone());
-		}
-		dynamic_pointer_cast<SphereCollider>(obj->GetCollider())->SetRadius(0.5f);
-		dynamic_pointer_cast<SphereCollider>(obj->GetCollider())->SetCenter(Vec3(0.f, 0.f, 0.f));
-		obj->AddComponent(meshRenderer);
-		scene->AddGameObject(obj);*/
-	}
-#pragma endregion
-
-
 #pragma region UI_Test
 	for (int32 i = 0; i < 6; i++) {
 		shared_ptr<GameObject> obj = make_shared<GameObject>();
@@ -278,7 +252,6 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 #pragma region Map
 	{
 		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage1.fbx");
-		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"MapMeshData", L"..\\Resources\\FBX\\Hamster.meshdata");
 
 		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
 
@@ -293,8 +266,6 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 			scene->AddGameObject(gameObject);
 			gameObject->AddComponent(make_shared<TestMap>());
 		}
-
-		FbxMeshInfo* meshInfo = meshData->GetMesh(0)->GetFbxMeshInfo();
 	}
 
 	{
@@ -306,7 +277,7 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 			gameObject->SetCheckFrustum(false);
 			gameObject->SetStatic(false);
 			gameObject->GetTransform()->SetLocalPosition(Vec3(-108.f, 250.f, 1877.f));
-			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
+			gameObject->GetTransform()->SetLocalScale(Vec3(2.f, 2.f, 2.f));
 			gameObject->GetTransform()->SetLocalRotation(Vec3(0.f, 0.f, 0.f));
 
 			scene->AddGameObject(gameObject);

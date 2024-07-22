@@ -46,6 +46,8 @@ public:
 	void SetStatic(bool flag) { _static = flag; }
 	bool IsStatic() { return _static; }
 
+	void AttachToBone(const std::shared_ptr<GameObject>& parent, const std::wstring& boneName);
+
 private:
 	array<shared_ptr<Component>, FIXED_COMPONENT_COUNT> _components;
 	vector<shared_ptr<MonoBehaviour>> _scripts;

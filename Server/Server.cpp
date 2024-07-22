@@ -152,9 +152,9 @@ public:
 	{
 		state = ST_FREE;
 		socket = 0;
-		pos	= Vec3(0, 0, 0);
-		dir	= Vec3(0, 0, 0);
-		scale = Vec3(1, 1, 1);
+		pos = Vec3(1447.f, 256.f, -2099.f);
+		dir = Vec3(-XM_PIDIV2, 3.2f, 0.f);
+		scale = Vec3(200.f, 200.f, 200.f);
 		isActive = false;
 		id = -1;
 		prevRemain = 0;
@@ -247,7 +247,6 @@ int main()
 
 	while (true) {
 		SOCKET client = WSAAccept(serverSocket, reinterpret_cast<sockaddr*>(&clientAddress), &addressSize, NULL, NULL);
-		//SOCKET client = accept(serverSocket, reinterpret_cast<sockaddr*>(&clientAddress), &addressSize);
 		if (client != INVALID_SOCKET) {
 			int client_id = getNewClientId();
 			if (client_id != -1) {
@@ -257,9 +256,6 @@ int main()
 				players[client_id].prevRemain = 0;
 				players[client_id].socket = client;
 				std::cout << "Client connected : " << client_id << std::endl;
-
-				/*u_long on = 1;
-				ioctlsocket(client, FIONBIO, &on);*/
 			}
 		}
 
@@ -385,15 +381,11 @@ void process_packet(int clientID, char* packet)
 	switch (packet[1]) {
 		case CS_LOGIN: {
 			CS_LOGIN_PACKET* p = reinterpret_cast<CS_LOGIN_PACKET*>(packet);
-			players[clientID].pos = Vec3(1447.f, 256.f, -2099.f);
-			players[clientID].dir = Vec3(-XM_PIDIV2, 3.2f, 0.f);
-			players[clientID].scale = Vec3(200.f, 200.f, 200.f);
-
 			PxCapsuleControllerDesc desc;
 			desc.height = 50.0f;
 			desc.radius = 25.0f;
 			desc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
-			desc.position = PxExtendedVec3(1447.f, 256.f, -2099.f);
+			desc.position = PxExtendedVec3(players[clientID].pos.x, players[clientID].pos.y, players[clientID].pos.z);
 			desc.material = pxDefaultMaterial;
 			desc.contactOffset = 0.1f; // 땅과의 거리
 			desc.stepOffset = 40.f; // 계단 높이
@@ -416,12 +408,20 @@ void process_packet(int clientID, char* packet)
 				other.send_AddPlayerPacket(clientID);
 				players[clientID].send_AddPlayerPacket(other.id);
 			}
-			break;
 		}
+			break;
+
 		case CS_MOVE: {
 			CS_MOVE_PACKET* p = reinterpret_cast<CS_MOVE_PACKET*>(packet);
 			UpdatePlayerMovement(clientID, p);
 		}
+			break;
+
+		case CS_LOGOUT: {
+			disconnect(clientID);
+			std::cout << "Client " << clientID << " logged out" << std::endl;
+		}
+			break;
 	}
 }
 
@@ -458,11 +458,7 @@ void initPhysX()
 
 	// 바닥 생성
 	pxDefaultScene->addActor(*groundPlane);
-
 	pxControllerManager = PxCreateControllerManager(*pxDefaultScene);
-
-	// PhysX Scene에서 충돌 정보 수신을 위한 콜백 함수 설정
-	//pxScene->setSimulationEventCallback();
 
 	std::cout << "PhysX Init Complete" << std::endl;
 }

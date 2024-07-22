@@ -154,3 +154,9 @@ void GameObject::AddComponent(shared_ptr<Component> component)
 		_scripts.push_back(dynamic_pointer_cast<MonoBehaviour>(component));
 	}
 }
+
+void GameObject::AttachToBone(const std::shared_ptr<GameObject>& parent, const std::wstring& boneName)
+{
+	GetTransform()->SetParent(parent->GetTransform());
+	GetTransform()->AttachToBone(parent, boneName);
+}
