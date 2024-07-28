@@ -10,11 +10,15 @@ constexpr int MAX_USER = 2;
 constexpr char CS_LOGIN = 0;
 constexpr char CS_MOVE = 1;
 constexpr char CS_LOGOUT = 2;
+constexpr char CS_SHOOT = 3;
 
 constexpr char SC_LOGIN_INFO = 2;
 constexpr char SC_ADD_PLAYER = 3;
 constexpr char SC_REMOVE_PLAYER = 4;
 constexpr char SC_MOVE_PLAYER = 5;
+constexpr char SC_ADD_BULLET = 6;
+constexpr char SC_MOVE_BULLET = 7;
+constexpr char SC_REMOVE_BULLET = 8;
 
 #pragma pack (push, 1)
 struct CS_LOGIN_PACKET {
@@ -32,6 +36,12 @@ struct CS_MOVE_PACKET {
 struct CS_LOGOUT_PACKET {
 	unsigned char size;
 	char	type;
+};
+
+struct CS_SHOOT_PACKET
+{
+	unsigned char size;
+	char type;
 };
 
 struct SC_LOGIN_INFO_PACKET {
@@ -63,6 +73,30 @@ struct SC_MOVE_PLAYER_PACKET {
 	float	velocity;
 	char	state;
 	//unsigned int move_time;
+};
+
+struct SC_ADD_BULLET_PACKET
+{
+	unsigned char size;
+	char type;
+	int bulletId;
+	Vec3 position;
+	Vec3 direction;
+};
+
+struct SC_MOVE_BULLET_PACKET
+{
+	unsigned char size;
+	char type;
+	int bulletId;
+	Vec3 position;
+};
+
+struct SC_REMOVE_BULLET_PACKET
+{
+	unsigned char size;
+	char type;
+	int bulletId;
 };
 
 #pragma pack (pop)

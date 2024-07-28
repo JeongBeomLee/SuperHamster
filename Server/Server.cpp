@@ -28,7 +28,6 @@ PxPvd*					pxPvd				= nullptr;	// 디버그용
 PxPvdSceneClient*		pxPvdScene			= nullptr;	// 디버그용
 
 class SESSION;
-
 void error_display(const char* msg, int err_no);
 int  getNewClientId();
 void disconnect(int clientID);
@@ -48,6 +47,7 @@ void ResetPlayerMovement(SESSION& player);
 void ApplyMovementAndGravity(PxController* controller, const SESSION& player, PxVec3& disp);
 void UpdatePlayerPosition(PxController* controller, SESSION& player);
 void SendMovementUpdate(int clientID);
+void updateBullets(float deltaTime);
 
 enum CLIENT_STATE { ST_FREE, ST_INGAME };
 enum PLAYER_STATE
@@ -76,6 +76,14 @@ enum class PlayerDirection : uint8_t {
 	AIM = 1 << 4,
 	FIRE = 1 << 5,
 	ROLL = 1 << 6
+};
+
+enum class PLAYER_GUN {
+	DEFAULT,
+	LASER,
+	MAGNETIC,
+
+	END
 };
 
 const float CAMERA_ROTATION_X = XMConvertToRadians(45.0f);
@@ -140,15 +148,17 @@ struct Vertex
 	Vec4 weights;
 	Vec4 indices;
 };
+
 struct BoneInfo
 {
 	std::wstring			boneName;
 	int32					parentIdx;
 	Matrix					matOffset;
 };
+
 class SESSION {
 public:
-	SESSION() 
+	SESSION() : lastMoveDirection(1.0f, 0.0f, 0.0f)
 	{
 		state = ST_FREE;
 		socket = 0;
@@ -161,7 +171,7 @@ public:
 		velocity = 0;
 		acceleration = 0;
 		weight = 100.f;
-		rotationSpeed = 120.0f;
+		rotationSpeed = 300.0f;
 		rollStartTime = 0.0f;
 		fireStartTime = 0.0f;
 		rollDistance = 0.0f;
@@ -183,9 +193,7 @@ public:
 	}
 
 	void send_LoginInfoPacket(int clientID);
-
 	void send_MovePlayerPacket(int clientID);
-
 	void send_AddPlayerPacket(int clientID);
 
 	void send_RemovePlayerPacket(int clientID)
@@ -217,9 +225,111 @@ public:
 	float			rollSpeed;
 	float			rollDuration;
 	Vec3			rollDirection;
+	PxVec3			lastMoveDirection;
 	//int				last_move_time;
 };
 
+
+class Bullet
+{
+public:
+	Bullet(int id, const PxVec3& position, const PxVec3& direction)
+		: _id(id), _lifetime(MAX_LIFETIME), _velocity(direction.getNormalized() * BULLET_SPEED), _lastUpdateTime(0.f)
+	{
+		// y축 방향의 속도를 0으로 설정
+		PxVec3 horizontalDirection = direction;
+		horizontalDirection.y = 0;
+		horizontalDirection.normalize();
+		_velocity = horizontalDirection * BULLET_SPEED;
+
+		PxTransform transform(position);
+		_rigidBody = pxPhysics->createRigidDynamic(transform);
+
+		PxSphereGeometry sphereGeom(0.5f);
+		PxMaterial* material = pxPhysics->createMaterial(0.5f, 0.5f, 0.1f);
+		PxShape* shape = PxRigidActorExt::createExclusiveShape(*_rigidBody, sphereGeom, *material);
+
+		// 트리거로 설정
+		shape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, false);
+		shape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, true);
+
+		_rigidBody->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+
+		pxDefaultScene->addActor(*_rigidBody);
+	}
+
+	~Bullet()
+	{
+		if (_rigidBody) {
+			pxDefaultScene->removeActor(*_rigidBody);
+			_rigidBody->release();
+		}
+	}
+
+	void Update(float deltaTime)
+	{
+		_lifetime -= deltaTime;
+		if (_lifetime <= 0.f) return;
+
+		PxTransform currentPose = _rigidBody->getGlobalPose();
+		PxVec3 movement = _velocity * deltaTime;
+
+		// y축 이동을 0으로 설정
+		movement.y = 0;
+
+		currentPose.p += movement;
+		_rigidBody->setKinematicTarget(currentPose);
+	}
+	bool IsAlive() const { return _lifetime > 0.f; }
+	int GetId() const { return _id; }
+	PxVec3 GetPosition() const { return _rigidBody->getGlobalPose().p; }
+	void OnCollision() { _lifetime = 0.f; }
+	physx::PxRigidDynamic* GetRigidBody() { return _rigidBody; }
+
+private:
+	int _id;
+	float _lifetime;
+	physx::PxRigidDynamic* _rigidBody;
+	PxVec3 _velocity;
+	static constexpr float BULLET_SPEED = 500.f;
+	static constexpr float MAX_LIFETIME = 5.f;
+	float _lastUpdateTime;
+};
+
+// 충돌 콜백 클래스
+class CollisionCallback : public PxSimulationEventCallback
+{
+	// 충돌 시 호출되는 메서드
+	void onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs) override
+	{
+		for (PxU32 i = 0; i < nbPairs; i++) {
+			const PxContactPair& cp = pairs[i];
+			if (cp.events & PxPairFlag::eNOTIFY_TOUCH_FOUND) {
+				// 충돌한 액터 중 하나가 총알인지 확인
+				Bullet* bullet = nullptr;
+				if (pairHeader.actors[0]->userData)
+					bullet = static_cast<Bullet*>(pairHeader.actors[0]->userData);
+				else if (pairHeader.actors[1]->userData)
+					bullet = static_cast<Bullet*>(pairHeader.actors[1]->userData);
+
+				if (bullet)
+					bullet->OnCollision();
+			}
+		}
+	}
+
+	// 트리거 이벤트(충돌하지 않고 통과하는 이벤트)가 발생했을 때 호출되는 메서드
+	void onTrigger(PxTriggerPair* pairs, PxU32 count) override {}
+	void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) override {}
+	void onWake(PxActor** actors, PxU32 count) override {}
+	void onSleep(PxActor** actors, PxU32 count) override {}
+	void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override {}
+};
+
+CollisionCallback gCollisionCallback;
+std::unordered_map<int, float> lastClientUpdateTime; // 클라이언트별 마지막 업데이트 시간을 저장
+std::vector<std::unique_ptr<Bullet>> bullets;
+int nextBulletId = 0;
 std::array<class SESSION, MAX_USER> players;
 int main()
 {
@@ -246,6 +356,7 @@ int main()
 	ioctlsocket(serverSocket, FIONBIO, &noblock);
 
 	while (true) {
+		g_Timer.Update();
 		SOCKET client = WSAAccept(serverSocket, reinterpret_cast<sockaddr*>(&clientAddress), &addressSize, NULL, NULL);
 		if (client != INVALID_SOCKET) {
 			int client_id = getNewClientId();
@@ -282,10 +393,11 @@ int main()
 			}
 		}
 
-		g_Timer.Update();
-		PxReal deltaTime = g_Timer.GetDeltaTime();
+		float deltaTime = g_Timer.GetDeltaTime();
 		pxDefaultScene->simulate(deltaTime);
 		pxDefaultScene->fetchResults(true);
+
+		updateBullets(deltaTime);
 	}
 
 	pxDefaultScene->release();
@@ -418,10 +530,47 @@ void process_packet(int clientID, char* packet)
 			break;
 
 		case CS_LOGOUT: {
+			PxController* controller = pxControllerManager->getController(clientID);
+			controller->release();
 			disconnect(clientID);
 			std::cout << "Client " << clientID << " logged out" << std::endl;
 		}
 			break;
+
+		case CS_SHOOT:
+		{
+			CS_SHOOT_PACKET* p = reinterpret_cast<CS_SHOOT_PACKET*>(packet);
+			// 플레이어의 컨트롤러 가져오기
+			PxController* playerController = pxControllerManager->getController(clientID);
+
+			// 컨트롤러의 위치와 방향 가져오기
+			PxExtendedVec3 controllerPosition = playerController->getPosition();
+			PxVec3 position(static_cast<float>(controllerPosition.x),
+				static_cast<float>(controllerPosition.y),
+				static_cast<float>(controllerPosition.z));
+
+			PxVec3 direction = players[clientID].lastMoveDirection;
+			direction.y = 0; // y축 성분 제거
+			direction.normalize();
+
+			auto newBullet = std::make_unique<Bullet>(nextBulletId++, position, direction);
+			newBullet->GetRigidBody()->userData = newBullet.get();
+
+			SC_ADD_BULLET_PACKET addPacket;
+			addPacket.size = sizeof(SC_ADD_BULLET_PACKET);
+			addPacket.type = SC_ADD_BULLET;
+			addPacket.bulletId = newBullet->GetId();
+			addPacket.position = Vec3(position.x, position.y, position.z);
+			addPacket.direction = Vec3(direction.x, direction.y, direction.z);
+
+			for (auto& pl : players) {
+				if (pl.state != ST_INGAME) continue;
+				pl.doSend(&addPacket);
+			}
+
+			bullets.push_back(std::move(newBullet));
+			break;
+		}
 	}
 }
 
@@ -429,6 +578,8 @@ void initPhysX()
 {
 	// PhysX Foundation 객체 생성
 	pxFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, pxAllocator, errorCallback);
+	if (!pxFoundation)
+        throw std::runtime_error("PxCreateFoundation failed!");
 
 	// PhysX Physics 객체 생성
 #ifdef _DEBUG
@@ -439,6 +590,8 @@ void initPhysX()
 #else
 	pxPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *pxFoundation, PxTolerancesScale(), true);
 #endif // _DEBUG
+	if (!pxPhysics)
+		throw std::runtime_error("PxCreatePhysics failed!");
 
 	// PhysX Scene 생성
 	PxSceneDesc sceneDesc(pxPhysics->getTolerancesScale());
@@ -454,12 +607,11 @@ void initPhysX()
 #endif // _DEBUG
 
 	pxDefaultMaterial = pxPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-	PxRigidStatic* groundPlane = PxCreatePlane(*pxPhysics, PxPlane(0, 1, 0, 0), *pxDefaultMaterial); // PxPlane(a, b, c, d) : ax + by + cz + d = 0
-
-	// 바닥 생성
-	pxDefaultScene->addActor(*groundPlane);
 	pxControllerManager = PxCreateControllerManager(*pxDefaultScene);
 
+	// 충돌 콜백 등록
+	pxDefaultScene->setSimulationEventCallback(&gCollisionCallback);
+	
 	std::cout << "PhysX Init Complete" << std::endl;
 }
 
@@ -650,6 +802,7 @@ void UpdatePlayerMovement(int clientID, const CS_MOVE_PACKET* p)
 	if (!disp.isZero()) {
 		UpdatePlayerVelocity(player, disp);
 		UpdatePlayerRotation(player, disp);
+		players[clientID].lastMoveDirection = disp;
 	}
 	else {
 		ResetPlayerMovement(player);
@@ -739,10 +892,10 @@ void UpdateFireState(SESSION& player, uint8_t direction)
 
 void UpdateRollState(SESSION& player) 
 {
-	player.acceleration = 500.0f;
+	player.acceleration = 750.0f;
 	player.velocity += player.acceleration * g_Timer.GetDeltaTime() * 50;
 
-	if (player.rollStartTime > 0.012f) {
+	if (player.rollStartTime > 0.007f) {
 		player.playerState = PLAYER_STATE::IDLE;
 		player.rollStartTime = 0.0f;
 		player.velocity = 0.0f;
@@ -822,4 +975,49 @@ void SendMovementUpdate(int clientID)
 			other.send_MovePlayerPacket(clientID);
 		}
 	}
+}
+
+void updateBullets(float deltaTime)
+{
+	for (auto& bullet : bullets) {
+		bullet->Update(deltaTime);
+	}
+
+	// 총알 상태 업데이트 패킷 전송 (10Hz로 제한)
+	for (auto& pl : players) {
+		if (pl.state != ST_INGAME) continue;
+
+		float currentTime = GetTickCount64() / 1000.f;
+		if (currentTime - lastClientUpdateTime[pl.id] >= 0.1f) {
+			lastClientUpdateTime[pl.id] = currentTime;
+
+			for (auto& bullet : bullets) {
+				SC_MOVE_BULLET_PACKET movePacket;
+				movePacket.size = sizeof(SC_MOVE_BULLET_PACKET);
+				movePacket.type = SC_MOVE_BULLET;
+				movePacket.bulletId = bullet->GetId();
+				PxVec3 position = bullet->GetPosition();
+				movePacket.position = Vec3(position.x, bullet->GetPosition().y, position.z);  // y값은 원래 위치 유지
+
+				pl.doSend(&movePacket);
+			}
+		}
+	}
+
+	bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
+		[](const std::unique_ptr<Bullet>& bullet) {
+			if (!bullet->IsAlive()) {
+				SC_REMOVE_BULLET_PACKET removePacket;
+				removePacket.size = sizeof(SC_REMOVE_BULLET_PACKET);
+				removePacket.type = SC_REMOVE_BULLET;
+				removePacket.bulletId = bullet->GetId();
+
+				for (auto& pl : players) {
+					if (pl.state != ST_INGAME) continue;
+					pl.doSend(&removePacket);
+				}
+				return true;
+			}
+			return false;
+		}), bullets.end());
 }

@@ -577,6 +577,21 @@ void Resources::CreateDefaultShader()
 		shader->CreateComputeShader(L"..\\Resources\\Shader\\animation.fx", "CS_Main", "cs_5_0");
 		Add<Shader>(L"ComputeAnimation", shader);
 	}
+
+	// Bullet (Deferred)
+	{
+		ShaderInfo info =
+		{
+			SHADER_TYPE::FORWARD,
+			RASTERIZER_TYPE::CULL_BACK,
+			DEPTH_STENCIL_TYPE::LESS,
+			BLEND_TYPE::ALPHA_BLEND
+		};
+
+		shared_ptr<Shader> shader = make_shared<Shader>();
+		shader->CreateGraphicsShader(L"..\\Resources\\Shader\\Bullet.fx", info);
+		Add<Shader>(L"Bullet", shader);
+	}
 }
 
 void Resources::CreateDefaultMaterial()
@@ -652,7 +667,6 @@ void Resources::CreateDefaultMaterial()
 	// Ground
 	{
 		shared_ptr<Shader> shader = GET_SINGLE(Resources)->Get<Shader>(L"Deferred");
-
 		shared_ptr<Texture> texture = GET_SINGLE(Resources)->Load<Texture>(L"Ground", L"..\\Resources\\Texture\\Stylized_Stone_Floor_005_basecolor.jpg");
 		shared_ptr<Texture> texture2 = GET_SINGLE(Resources)->Load<Texture>(L"Ground_Normal", L"..\\Resources\\Texture\\Stylized_Stone_Floor_005_normal.jpg");
 		shared_ptr<Material> material = make_shared<Material>();
@@ -693,7 +707,14 @@ void Resources::CreateDefaultMaterial()
 		shared_ptr<Shader> shader = GET_SINGLE(Resources)->Get<Shader>(L"ComputeAnimation");
 		shared_ptr<Material> material = make_shared<Material>();
 		material->SetShader(shader);
-
 		Add<Material>(L"ComputeAnimation", material);
+	}
+
+	// Bullet
+	{
+		shared_ptr<Shader> shader = GET_SINGLE(Resources)->Get<Shader>(L"Bullet");
+		shared_ptr<Material> material = make_shared<Material>();
+		material->SetShader(shader);
+		Add<Material>(L"Bullet", material);
 	}
 }

@@ -1,7 +1,6 @@
 #pragma once
 
 class Scene;
-
 enum
 {
 	MAX_LAYER = 32

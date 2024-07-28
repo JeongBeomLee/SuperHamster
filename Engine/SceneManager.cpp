@@ -29,6 +29,24 @@ void SceneManager::Update()
 		return;
 
 	activeScene->Update();
+
+	shared_ptr<GameObject> bullet = activeScene->GetGameObjectByName(L"Bullet");
+	shared_ptr<Material> bulletMaterial = bullet->GetMeshRenderer()->GetMaterial();
+
+	static float totalTime = 0.f;
+	totalTime += DELTA_TIME;
+	bulletMaterial->SetFloat(0, totalTime);
+
+	bullet->GetTransform()->SetLocalPosition(Vec3(-30.f, 272.f, 1584.f + sin(totalTime) * 100.f));
+	Vec3 currentPos = bullet->GetTransform()->GetLocalPosition();
+	bulletMaterial->SetVec4(1, Vec4(currentPos.x, currentPos.y, currentPos.z, 0));
+
+	static Vec3 prevPos = currentPos;
+	float trailLength = 5.0f; // 트레일 길이 조절
+	bulletMaterial->SetVec4(0, Vec4(prevPos.x, prevPos.y, prevPos.z, trailLength));
+
+	prevPos = currentPos;
+
 	activeScene->LateUpdate();
 	activeScene->FinalUpdate();
 }
@@ -252,7 +270,6 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 #pragma region Map
 	{
 		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage1.fbx");
-
 		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
 
 		for (auto& gameObject : gameObjects) {
@@ -286,16 +303,16 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 
 	{
 		//shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Stage1_Mimic.fbx");
-		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage1_Mimic", L"..\\Resources\\FBX\\Stage1_Mimic.meshdata");
+		shared_ptr<MeshData> meshData = GET_SINGLE(Resources)->Load<MeshData>(L"Stage1_Mimic", L"..\\Resources\\FBX\\Stage2_Haunt.meshdata");
 
 		vector<shared_ptr<GameObject>> gameObjects = meshData->Instantiate();
-
 		for (auto& gameObject : gameObjects) {
 			gameObject->SetName(L"Stage1_Mimic");
 			gameObject->SetCheckFrustum(false);
 			gameObject->SetStatic(false);
-			gameObject->GetTransform()->SetLocalPosition(Vec3(-285.f, 171.f, 1694.f));
+			gameObject->GetTransform()->SetLocalPosition(Vec3(-1493.09143, 173.648636, -399.480347));
 			gameObject->GetTransform()->SetLocalScale(Vec3(1.f, 1.f, 1.f));
+			gameObject->GetTransform()->SetLocalRotation(Vec3(0.f, -0.9f, 0.f));
 
 			scene->AddGameObject(gameObject);
 			gameObject->AddComponent(make_shared<TestAnimation>());
@@ -321,6 +338,28 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 	}
 
 #pragma endregion
+
+	{
+		shared_ptr<GameObject> bullet = make_shared<GameObject>();
+		bullet->AddComponent(make_shared<Transform>());
+		bullet->SetName(L"Bullet");
+		shared_ptr<Transform> transform = bullet->GetTransform();
+		transform->SetLocalPosition(Vec3(-30.f, 272.f, 1584.f));
+		transform->SetLocalScale(Vec3(10.f, 10.f, 10.f));
+		bullet->SetCheckFrustum(false);
+		shared_ptr<MeshRenderer> meshRenderer = make_shared<MeshRenderer>();
+		{
+			shared_ptr<Mesh> sphereMesh = GET_SINGLE(Resources)->LoadSphereMesh();
+			meshRenderer->SetMesh(sphereMesh);
+		}
+		{
+			shared_ptr<Material> material = GET_SINGLE(Resources)->Get<Material>(L"Bullet");
+			material->SetFloat(0, 0.f);
+			meshRenderer->SetMaterial(material);
+		}
+		bullet->AddComponent(meshRenderer);
+		scene->AddGameObject(bullet);
+	}
 
 	return scene;	
 }

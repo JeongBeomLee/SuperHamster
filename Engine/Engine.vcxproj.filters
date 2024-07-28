@@ -366,7 +366,7 @@
     <FxCompile Include="..\Resources\Shader\math.fx">
       <Filter>Shader</Filter>
     </FxCompile>
-    <FxCompile Include="..\Resources\Shader\DebugGeometry.fx">
+    <FxCompile Include="..\Resources\Shader\bullet.fx">
       <Filter>Shader</Filter>
     </FxCompile>
   </ItemGroup>

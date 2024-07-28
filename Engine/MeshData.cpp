@@ -273,18 +273,27 @@ void MeshData::Load(const wstring& _strFilePath)
 			material->SetName(materialName);
 			material->SetShader(GET_SINGLE(Resources)->Get<Shader>(L"Deferred"));
 
+			// _strFilePath에서 마지막 \\ 위치 찾기
+			size_t pos = _strFilePath.find_last_of(L"\\") + 1;
+
+			// 마지막 \\에서 부터 . 까지의 길이
+			size_t length = _strFilePath.find_last_of(L".") - pos;
+
+			// _strFilePath에서 //부터 .까지 자르기
+			wstring objName = _strFilePath.substr(pos, length);
+
 			if (!diffuseTexName.empty()) {
-				shared_ptr<Texture> diffuseTexture = GET_SINGLE(Resources)->Load<Texture>(diffuseTexName, resourcePath + L"\\" + diffuseTexName);
+				shared_ptr<Texture> diffuseTexture = GET_SINGLE(Resources)->Load<Texture>(objName + L"_" + diffuseTexName, resourcePath + L"\\" + diffuseTexName);
 				material->SetTexture(0, diffuseTexture);
 			}
 
 			if (!normalTexName.empty()) {
-				shared_ptr<Texture> normalTexture = GET_SINGLE(Resources)->Load<Texture>(normalTexName, resourcePath + L"\\" + normalTexName);
+				shared_ptr<Texture> normalTexture = GET_SINGLE(Resources)->Load<Texture>(objName + L"_" + normalTexName, resourcePath + L"\\" + normalTexName);
 				material->SetTexture(1, normalTexture);
 			}
 
 			if (!specularTexName.empty()) {
-				shared_ptr<Texture> specularTexture = GET_SINGLE(Resources)->Load<Texture>(specularTexName, resourcePath + L"\\" + specularTexName);
+				shared_ptr<Texture> specularTexture = GET_SINGLE(Resources)->Load<Texture>(objName + L"_" + specularTexName, resourcePath + L"\\" + specularTexName);
 				material->SetTexture(2, specularTexture);
 			}
 

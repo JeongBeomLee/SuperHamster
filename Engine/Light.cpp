@@ -38,16 +38,14 @@ void Light::Render()
 
 	GetTransform()->PushData();
 
-	if (static_cast<LIGHT_TYPE>(_lightInfo.lightType) == LIGHT_TYPE::DIRECTIONAL_LIGHT)
-	{
+	if (static_cast<LIGHT_TYPE>(_lightInfo.lightType) == LIGHT_TYPE::DIRECTIONAL_LIGHT) {
 		shared_ptr<Texture> shadowTex = GET_SINGLE(Resources)->Get<Texture>(L"ShadowTarget");
 		_lightMaterial->SetTexture(2, shadowTex);
 
 		Matrix matVP = _shadowCamera->GetCamera()->GetViewMatrix() * _shadowCamera->GetCamera()->GetProjectionMatrix();
 		_lightMaterial->SetMatrix(0, matVP);
 	}
-	else
-	{
+	else {
 		float scale = 2 * _lightInfo.range;
 		GetTransform()->SetLocalScale(Vec3(scale, scale, scale));
 	}
@@ -77,22 +75,21 @@ void Light::SetLightType(LIGHT_TYPE type)
 {
 	_lightInfo.lightType = static_cast<int32>(type);
 
-	switch (type)
-	{
+	switch (type) {
 	case LIGHT_TYPE::DIRECTIONAL_LIGHT:
 		_volumeMesh = GET_SINGLE(Resources)->Get<Mesh>(L"Rectangle");
 		_lightMaterial = GET_SINGLE(Resources)->Get<Material>(L"DirLight");
-
 		_shadowCamera->GetCamera()->SetScale(1.f);
 		_shadowCamera->GetCamera()->SetFar(10000.f);
 		_shadowCamera->GetCamera()->SetWidth(4096);
 		_shadowCamera->GetCamera()->SetHeight(4096);
-
 		break;
+
 	case LIGHT_TYPE::POINT_LIGHT:
 		_volumeMesh = GET_SINGLE(Resources)->Get<Mesh>(L"Sphere");
 		_lightMaterial = GET_SINGLE(Resources)->Get<Material>(L"PointLight");
 		break;
+
 	case LIGHT_TYPE::SPOT_LIGHT:
 		_volumeMesh = GET_SINGLE(Resources)->Get<Mesh>(L"Sphere");
 		_lightMaterial = GET_SINGLE(Resources)->Get<Material>(L"PointLight");

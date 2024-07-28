@@ -18,7 +18,7 @@ void InstancingManager::Render(vector<shared_ptr<GameObject>>& gameObjects)
 	for (auto& pair : cache) {
 		const vector<shared_ptr<GameObject>>& vec = pair.second;
 
-		if (vec.size() == 1) {
+		/*if (vec.size() == 1) {
 			vec[0]->GetMeshRenderer()->Render();
 		}
 		else {
@@ -35,7 +35,10 @@ void InstancingManager::Render(vector<shared_ptr<GameObject>>& gameObjects)
 
 			shared_ptr<InstancingBuffer>& buffer = _buffers[instanceId];
 			vec[0]->GetMeshRenderer()->Render(buffer);
-		}
+		}*/
+
+		for (const shared_ptr<GameObject>& gameObject : vec)
+			gameObject->GetMeshRenderer()->Render();
 	}
 }
 

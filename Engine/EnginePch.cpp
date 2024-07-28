@@ -152,10 +152,10 @@ void ProcessPacket(char* ptr)
             object->AddComponent(make_shared<PlayerScript>());
 		}
 
-        shared_ptr<MeshData> gunMeshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 02.fbx");
+        shared_ptr<MeshData> gunMeshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 01.fbx");
         vector<shared_ptr<GameObject>> gunObjects = gunMeshData->Instantiate();
         for (auto& object : gunObjects) {
-            object->SetName(L"Hamster" + to_wstring(g_myid) + L"_Gun2");
+            object->SetName(L"Hamster" + to_wstring(g_myid) + L"_DefaultGun");
             object->SetCheckFrustum(false);
             object->SetStatic(false);
             object->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
@@ -198,6 +198,7 @@ void ProcessPacket(char* ptr)
                 object->SetCheckFrustum(false);
                 object->SetStatic(false);
                 object->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+                object->GetTransform()->SetLocalScale(Vec3(0.5f, 0.5f, 0.5f));
                 object->GetTransform()->SetLocalRotation(Vec3(XMConvertToRadians(180.f), XMConvertToRadians(-20.f), XMConvertToRadians(90.f)));
                 object->AttachToBone(scene->GetGameObjectByName(L"Hamster" + to_wstring(id)), L"mixamorig:RightHand");
 
@@ -237,6 +238,52 @@ void ProcessPacket(char* ptr)
         scene->RemoveGameObject(scene->GetGameObjectByName(L"Hamster" + to_wstring(other_id)));
         break;
     }
+
+    case SC_ADD_BULLET:
+    {
+        SC_ADD_BULLET_PACKET* packet = reinterpret_cast<SC_ADD_BULLET_PACKET*>(ptr);
+        // 총알 게임 오브젝트 생성 및 초기화
+        shared_ptr<GameObject> bullet = make_shared<GameObject>();
+        bullet->SetName(L"Bullet_" + to_wstring(packet->bulletId));
+        bullet->SetCheckFrustum(false);
+        bullet->SetStatic(false);
+        bullet->AddComponent(make_shared<Transform>());
+        bullet->GetTransform()->SetLocalPosition(packet->position);
+        bullet->GetTransform()->SetLocalScale(Vec3(10.f, 10.f, 10.f));
+
+        shared_ptr<MeshRenderer> meshRenderer = make_shared<MeshRenderer>();
+        meshRenderer->SetMesh(GET_SINGLE(Resources)->LoadSphereMesh());
+        meshRenderer->SetMaterial(GET_SINGLE(Resources)->Get<Material>(L"Bullet"));
+        bullet->AddComponent(meshRenderer);
+
+        GET_SINGLE(SceneManager)->GetActiveScene()->AddGameObject(bullet);
+        break;
+    }
+
+    case SC_MOVE_BULLET:
+    {
+        SC_MOVE_BULLET_PACKET* packet = reinterpret_cast<SC_MOVE_BULLET_PACKET*>(ptr);
+        auto bullet = GET_SINGLE(SceneManager)->GetActiveScene()->GetGameObjectByName(L"Bullet_" + to_wstring(packet->bulletId));
+        if (bullet) {
+            Vec3 currentPos = bullet->GetTransform()->GetLocalPosition();
+            Vec3 targetPos = packet->position;
+            Vec3 newPos = Vec3::Lerp(currentPos, targetPos, 0.5f);  // 보간된 위치 계산
+            bullet->GetTransform()->SetLocalPosition(newPos);
+        }
+        break;
+    }
+
+    case SC_REMOVE_BULLET:
+    {
+        SC_REMOVE_BULLET_PACKET* packet = reinterpret_cast<SC_REMOVE_BULLET_PACKET*>(ptr);
+        auto bullet = GET_SINGLE(SceneManager)->GetActiveScene()->GetGameObjectByName(L"Bullet_" + to_wstring(packet->bulletId));
+        if (bullet)
+        {
+            GET_SINGLE(SceneManager)->GetActiveScene()->RemoveGameObject(bullet);
+        }
+        break;
+    }
+
     default:
         printf("Unknown PACKET type [%d]\n", ptr[1]);
     }
