@@ -577,6 +577,30 @@ void Resources::CreateDefaultShader()
 		shader->CreateComputeShader(L"..\\Resources\\Shader\\animation.fx", "CS_Main", "cs_5_0");
 		Add<Shader>(L"ComputeAnimation", shader);
 	}
+
+	// Water
+	{
+		ShaderInfo info = {
+			SHADER_TYPE::FORWARD,
+			RASTERIZER_TYPE::CULL_NONE,
+			DEPTH_STENCIL_TYPE::LESS,
+			BLEND_TYPE::ALPHA_BLEND
+		};
+
+		ShaderArg arg =
+		{
+			"VS_Main",
+			"",
+			"",
+			"",
+			"PS_Main",
+		};
+
+		shared_ptr<Shader> shader = make_shared<Shader>();
+		shader->CreateGraphicsShader(L"..\\Resources\\Shader\\water.fx", info);
+		Add<Shader>(L"Water", shader);
+	}
+
 }
 
 void Resources::CreateDefaultMaterial()
@@ -695,5 +719,20 @@ void Resources::CreateDefaultMaterial()
 		material->SetShader(shader);
 
 		Add<Material>(L"ComputeAnimation", material);
+	}
+
+	//water
+	{
+		shared_ptr<Shader> shader = GET_SINGLE(Resources)->Get<Shader>(L"Water");
+		shared_ptr<Texture> normalMap = GET_SINGLE(Resources)->Load<Texture>(L"WaterNormal", L"..\\Resources\\Texture\\Water\\water_normal2.jpg");
+		shared_ptr<Texture> distortionMap = GET_SINGLE(Resources)->Load<Texture>(L"WaterDistortion", L"..\\Resources\\Texture\\Water\\water_texture2.jpg");
+		shared_ptr<Material> material = make_shared<Material>();
+
+		material->SetShader(shader);
+		material->SetTexture(0, normalMap);
+		material->SetTexture(1, distortionMap);
+
+
+		Add<Material>(L"Water", material);
 	}
 }
