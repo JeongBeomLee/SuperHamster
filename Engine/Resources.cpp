@@ -380,7 +380,8 @@ void Resources::CreateDefaultShader()
 		{
 			SHADER_TYPE::FORWARD,
 			RASTERIZER_TYPE::CULL_NONE,
-			DEPTH_STENCIL_TYPE::NO_DEPTH_TEST_NO_WRITE
+			DEPTH_STENCIL_TYPE::NO_DEPTH_TEST_NO_WRITE,
+			BLEND_TYPE::ALPHA_BLEND
 		};
 
 		ShaderArg arg =
@@ -500,6 +501,9 @@ void Resources::CreateDefaultShader()
 		Add<Shader>(L"Particle", shader);
 	}
 
+
+	
+
 	// ComputeParticle
 	{
 		shared_ptr<Shader> shader = make_shared<Shader>();
@@ -615,6 +619,32 @@ void Resources::CreateDefaultShader()
 		shader->CreateGraphicsShader(L"..\\Resources\\Shader\\water.fx", info);
 		Add<Shader>(L"Water", shader);
 	}
+
+	// Potal - Particle
+	{
+		ShaderInfo info =
+		{
+			SHADER_TYPE::PARTICLE,
+			RASTERIZER_TYPE::CULL_BACK,
+			DEPTH_STENCIL_TYPE::LESS_NO_WRITE,
+			BLEND_TYPE::ALPHA_BLEND,
+			D3D_PRIMITIVE_TOPOLOGY_POINTLIST
+		};
+
+		ShaderArg arg =
+		{
+			"VS_Main",
+			"",
+			"",
+			"GS_Main",
+			"PS_Main"
+		};
+
+		shared_ptr<Shader> shader = make_shared<Shader>();
+		shader->CreateGraphicsShader(L"..\\Resources\\Shader\\potal.fx", info, arg);
+		Add<Shader>(L"Potal", shader);
+	}
+
 }
 
 void Resources::CreateDefaultMaterial()
@@ -677,6 +707,8 @@ void Resources::CreateDefaultMaterial()
 		material->SetShader(shader);
 		Add<Material>(L"Particle", material);
 	}
+
+	
 
 	// ComputeParticle
 	{
@@ -753,5 +785,13 @@ void Resources::CreateDefaultMaterial()
 		material->SetTexture(1, distortionMap);
 
 		Add<Material>(L"Water", material);
+	}
+
+	// Potal
+	{
+		shared_ptr<Shader> shader = GET_SINGLE(Resources)->Get<Shader>(L"Potal");
+		shared_ptr<Material> material = make_shared<Material>();
+		material->SetShader(shader);
+		Add<Material>(L"Potal", material);
 	}
 }
