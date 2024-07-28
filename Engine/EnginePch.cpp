@@ -12,6 +12,7 @@
 #include "MeshRenderer.h"
 #include "Mesh.h"
 #include "Animator.h"
+#include "ParticleSystem.h"
 
 unique_ptr<Engine> gEngine = make_unique<Engine>();
 unique_ptr<Vec3> cameraPos = make_unique<Vec3>();
@@ -248,13 +249,14 @@ void ProcessPacket(char* ptr)
         bullet->SetCheckFrustum(false);
         bullet->SetStatic(false);
         bullet->AddComponent(make_shared<Transform>());
+        bullet->AddComponent(make_shared<ParticleSystem>());
         bullet->GetTransform()->SetLocalPosition(packet->position);
-        bullet->GetTransform()->SetLocalScale(Vec3(10.f, 10.f, 10.f));
+        bullet->GetTransform()->SetLocalScale(Vec3(100.f, 100.f, 100.f));
 
-        shared_ptr<MeshRenderer> meshRenderer = make_shared<MeshRenderer>();
+        /*shared_ptr<MeshRenderer> meshRenderer = make_shared<MeshRenderer>();
         meshRenderer->SetMesh(GET_SINGLE(Resources)->LoadSphereMesh());
         meshRenderer->SetMaterial(GET_SINGLE(Resources)->Get<Material>(L"Bullet"));
-        bullet->AddComponent(meshRenderer);
+        bullet->AddComponent(meshRenderer);*/
 
         GET_SINGLE(SceneManager)->GetActiveScene()->AddGameObject(bullet);
         break;

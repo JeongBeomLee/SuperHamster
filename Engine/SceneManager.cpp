@@ -22,6 +22,7 @@
 #include "Mesh.h"
 #include "FBXLoader.h"
 #include "TestAnimation.h"
+#include "WaterScript.h"
 
 void SceneManager::Update()
 {
@@ -29,24 +30,6 @@ void SceneManager::Update()
 		return;
 
 	activeScene->Update();
-
-	shared_ptr<GameObject> bullet = activeScene->GetGameObjectByName(L"Bullet");
-	shared_ptr<Material> bulletMaterial = bullet->GetMeshRenderer()->GetMaterial();
-
-	static float totalTime = 0.f;
-	totalTime += DELTA_TIME;
-	bulletMaterial->SetFloat(0, totalTime);
-
-	bullet->GetTransform()->SetLocalPosition(Vec3(-30.f, 272.f, 1584.f + sin(totalTime) * 100.f));
-	Vec3 currentPos = bullet->GetTransform()->GetLocalPosition();
-	bulletMaterial->SetVec4(1, Vec4(currentPos.x, currentPos.y, currentPos.z, 0));
-
-	static Vec3 prevPos = currentPos;
-	float trailLength = 5.0f; // 트레일 길이 조절
-	bulletMaterial->SetVec4(0, Vec4(prevPos.x, prevPos.y, prevPos.z, trailLength));
-
-	prevPos = currentPos;
-
 	activeScene->LateUpdate();
 	activeScene->FinalUpdate();
 }
@@ -135,6 +118,7 @@ shared_ptr<GameObject> SceneManager::Pick(int32 screenX, int32 screenY)
 
 	return picked;
 }
+
 shared_ptr<Scene> SceneManager::LoadTestScene()
 {
 #pragma region LayerMask
@@ -256,11 +240,16 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		shared_ptr<GameObject> light = make_shared<GameObject>();
 		light->AddComponent(make_shared<Transform>());
 		light->AddComponent(make_shared<Light>());
-		light->GetTransform()->SetLocalPosition(Vec3(0.f, 1300.f, -100.f));
+		light->GetTransform()->SetLocalPosition(Vec3(1447.f, 5600.f, -2099.f));
 		light->GetLight()->SetLightDirection(Vec3(0.f, -1.f, 1.f));
 		light->GetLight()->SetLightType(LIGHT_TYPE::DIRECTIONAL_LIGHT);
+		// Diffuse: 밝고 강한 색상, 카툰 스타일에서 명확한 경계를 만듭니다.
 		light->GetLight()->SetDiffuse(Vec3(1.f, 1.f, 1.f));
-		light->GetLight()->SetAmbient(Vec3(0.1f, 0.1f, 0.1f));
+
+		// Ambient: 낮은 값, 전체 장면의 기본 밝기를 설정합니다.
+		light->GetLight()->SetAmbient(Vec3(0.05f, 0.05f, 0.05f));
+
+		// Specular: 강조된 반사, 카툰 스타일 하이라이트를 강조합니다.
 		light->GetLight()->SetSpecular(Vec3(0.2f, 0.2f, 0.2f));
 
 		scene->AddGameObject(light);
@@ -360,6 +349,38 @@ shared_ptr<Scene> SceneManager::LoadTestScene()
 		bullet->AddComponent(meshRenderer);
 		scene->AddGameObject(bullet);
 	}
+
+#pragma region ParticleSystem
+	{
+		shared_ptr<GameObject> particle = make_shared<GameObject>();
+		particle->AddComponent(make_shared<Transform>());
+		particle->AddComponent(make_shared<ParticleSystem>());
+		particle->SetCheckFrustum(false);
+		particle->GetTransform()->SetLocalPosition(Vec3(1447.f, 256.f, -2099.f));
+		scene->AddGameObject(particle);
+	}
+#pragma endregion
+
+	shared_ptr<GameObject> water = make_shared<GameObject>();
+	water->SetName(L"Water");
+	water->AddComponent(make_shared<Transform>());
+	water->GetTransform()->SetLocalScale(Vec3(3000.f, 300.f, 3000.f));
+	water->GetTransform()->SetLocalPosition(Vec3(1000.f, 500.f, 1004.f));
+	// x축 90도 회전
+	water->SetCheckFrustum(false);
+	water->SetStatic(false);
+
+	shared_ptr<MeshRenderer> meshRenderer = make_shared<MeshRenderer>();
+	shared_ptr<Mesh> mesh = GET_SINGLE(Resources)->LoadCubeMesh();
+	meshRenderer->SetMesh(mesh);
+
+	shared_ptr<Material> material = GET_SINGLE(Resources)->Get<Material>(L"Water");
+	meshRenderer->SetMaterial(material);
+
+	water->AddComponent(meshRenderer);
+	water->AddComponent(make_shared<WaterScript>());
+
+	//scene->AddGameObject(water);
 
 	return scene;	
 }

@@ -58,6 +58,9 @@ void Light::Render()
 
 void Light::RenderShadow()
 {
+	if (_lightInfo.lightType != static_cast<int32>(LIGHT_TYPE::DIRECTIONAL_LIGHT))
+		return;
+
 	_shadowCamera->GetCamera()->SortShadowObject();
 	_shadowCamera->GetCamera()->Render_Shadow();
 }
@@ -79,6 +82,7 @@ void Light::SetLightType(LIGHT_TYPE type)
 	case LIGHT_TYPE::DIRECTIONAL_LIGHT:
 		_volumeMesh = GET_SINGLE(Resources)->Get<Mesh>(L"Rectangle");
 		_lightMaterial = GET_SINGLE(Resources)->Get<Material>(L"DirLight");
+
 		_shadowCamera->GetCamera()->SetScale(1.f);
 		_shadowCamera->GetCamera()->SetFar(10000.f);
 		_shadowCamera->GetCamera()->SetWidth(4096);

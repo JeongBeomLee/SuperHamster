@@ -552,6 +552,9 @@ void process_packet(int clientID, char* packet)
 			PxVec3 direction = players[clientID].lastMoveDirection;
 			direction.y = 0; // y축 성분 제거
 			direction.normalize();
+			
+			position += direction * 60.0f;
+			position.y += 20.f;
 
 			auto newBullet = std::make_unique<Bullet>(nextBulletId++, position, direction);
 			newBullet->GetRigidBody()->userData = newBullet.get();

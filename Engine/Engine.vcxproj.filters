@@ -183,6 +183,9 @@
     <ClCompile Include="TestAnimation.cpp">
       <Filter>Object\Test</Filter>
     </ClCompile>
+    <ClCompile Include="WaterScript.cpp">
+      <Filter>Object\Test</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -318,6 +321,9 @@
       <Filter>Object\Test</Filter>
     </ClInclude>
     <ClInclude Include="TestAnimation.h">
+      <Filter>Object\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="WaterScript.h">
       <Filter>Object\Test</Filter>
     </ClInclude>
   </ItemGroup>
