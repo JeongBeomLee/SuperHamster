@@ -192,10 +192,10 @@ void ProcessPacket(char* ptr)
                 gameObject->AddComponent(make_shared<PlayerScript2>());
             }
 
-            shared_ptr<MeshData> gunMeshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 02.fbx");
+            shared_ptr<MeshData> gunMeshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 01.fbx");
             vector<shared_ptr<GameObject>> gunObjects = gunMeshData->Instantiate();
             for (auto& object : gunObjects) {
-                object->SetName(L"Hamster" + to_wstring(id) + L"_Gun2");
+                object->SetName(L"Hamster" + to_wstring(id) + L"_DefaultGun");
                 object->SetCheckFrustum(false);
                 object->SetStatic(false);
                 object->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
@@ -282,6 +282,29 @@ void ProcessPacket(char* ptr)
         if (bullet)
         {
             GET_SINGLE(SceneManager)->GetActiveScene()->RemoveGameObject(bullet);
+        }
+        break;
+    }
+
+    case SC_NEXT_STAGE:
+	{
+        GET_SINGLE(SceneManager)->LoadNextScene();
+		break;
+	}
+
+    case SC_CHANGE_GUN: {
+        SC_CHANGE_GUN_PACKET* packet = reinterpret_cast<SC_CHANGE_GUN_PACKET*>(ptr);
+        int playerId = packet->id;
+        PLAYER_GUN gunType = static_cast<PLAYER_GUN>(packet->gunType);
+
+        Scene* scene = GET_SINGLE(SceneManager)->GetActiveScene().get();
+        shared_ptr<GameObject> playerObj = scene->GetGameObjectByName(L"Hamster" + to_wstring(playerId));
+
+        if (playerObj) {
+            PlayerScript2* playerScript = dynamic_cast<PlayerScript2*>(playerObj->GetScript().get());
+            if (playerScript) {
+                playerScript->UpdateGun(gunType, playerId);
+            }
         }
         break;
     }

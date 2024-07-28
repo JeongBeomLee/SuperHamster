@@ -11,6 +11,8 @@ constexpr char CS_LOGIN = 0;
 constexpr char CS_MOVE = 1;
 constexpr char CS_LOGOUT = 2;
 constexpr char CS_SHOOT = 3;
+constexpr char CS_READY = 4;
+constexpr char CS_CHANGE_GUN = 5;
 
 constexpr char SC_LOGIN_INFO = 2;
 constexpr char SC_ADD_PLAYER = 3;
@@ -19,6 +21,8 @@ constexpr char SC_MOVE_PLAYER = 5;
 constexpr char SC_ADD_BULLET = 6;
 constexpr char SC_MOVE_BULLET = 7;
 constexpr char SC_REMOVE_BULLET = 8;
+constexpr char SC_NEXT_STAGE = 9;
+constexpr char SC_CHANGE_GUN = 10;
 
 #pragma pack (push, 1)
 struct CS_LOGIN_PACKET {
@@ -29,7 +33,7 @@ struct CS_LOGIN_PACKET {
 struct CS_MOVE_PACKET {
 	unsigned char size;
 	char	type;
-	char	direction;  // 0 : UP, 1 : DOWN, 2 : LEFT, 3 : RIGHT, 4 : SPACE, 5 : Q, 6 : W, 7 : E, 8 : A, 9 : S
+	char	direction;
 	char	prevDirection;
 };
 
@@ -42,6 +46,18 @@ struct CS_SHOOT_PACKET
 {
 	unsigned char size;
 	char type;
+};
+
+struct CS_READY_PACKET
+{
+	unsigned char size;
+	char type;
+};
+
+struct CS_CHANGE_GUN_PACKET {
+	unsigned char size;
+	char    type;
+	char    gunType;
 };
 
 struct SC_LOGIN_INFO_PACKET {
@@ -97,6 +113,19 @@ struct SC_REMOVE_BULLET_PACKET
 	unsigned char size;
 	char type;
 	int bulletId;
+};
+
+struct SC_NEXT_STAGE_PACKET
+{
+	unsigned char size;
+	char type;
+};
+
+struct SC_CHANGE_GUN_PACKET {
+	unsigned char size;
+	char    type;
+	short   id;
+	char    gunType;
 };
 
 #pragma pack (pop)

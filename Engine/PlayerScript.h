@@ -16,6 +16,8 @@ public:
 	void SetVelocity(float velocity) { m_Velocity = velocity; }
 	void SetState(PLAYER_STATE state) { m_CurrentState = state; }
 	void UpdateGun(PLAYER_GUN gun);
+	void SendReadyStatus();
+	void SendChangeGunPacket(PLAYER_GUN gun);
 
 	virtual void Update() override;
 
@@ -25,6 +27,7 @@ private:
 	PLAYER_GUN m_Gun = PLAYER_GUN::DEFAULT;
 	char m_PrevDirection;
 	float m_Velocity;
+	bool m_IsReady = false;
 };
 
 class PlayerScript2 : public MonoBehaviour
@@ -33,6 +36,7 @@ public:
 	PlayerScript2();
 	void SetVelocity(float velocity) { m_Velocity = velocity; }
 	void SetState(PLAYER_STATE state) { m_CurrentState = state; }
+	void UpdateGun(PLAYER_GUN gun, int id);
 
 	virtual void Update() override;
 

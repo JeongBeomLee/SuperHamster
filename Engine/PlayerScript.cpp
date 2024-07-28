@@ -17,6 +17,7 @@ PlayerScript::PlayerScript()
 	, m_CurrentState(PLAYER_STATE::IDLE)
     , m_Velocity(0.0f)
 {
+    GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 01.fbx");
     GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 02.fbx");
     GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 07.fbx");
 }
@@ -100,7 +101,25 @@ void PlayerScript::UpdateGun(PLAYER_GUN gun)
         }
 
         m_Gun = gun;
+        SendChangeGunPacket(gun);
     }
+}
+
+void PlayerScript::SendReadyStatus()
+{
+    CS_READY_PACKET packet;
+    packet.size = sizeof(CS_READY_PACKET);
+    packet.type = CS_READY;
+    send_packet(&packet);
+}
+
+void PlayerScript::SendChangeGunPacket(PLAYER_GUN gun)
+{
+    CS_CHANGE_GUN_PACKET packet;
+	packet.size = sizeof(CS_CHANGE_GUN_PACKET);
+	packet.type = CS_CHANGE_GUN;
+	packet.gunType = static_cast<char>(gun);
+	send_packet(&packet);
 }
 
 void PlayerScript::Update()
@@ -132,6 +151,9 @@ void PlayerScript::Update()
     if (INPUT->GetButtonDown(KEY_TYPE::SPACE)) {
         inputDirection |= 64;
     }
+    if (INPUT->GetButtonDown(KEY_TYPE::E)) {
+        SendReadyStatus();
+	}
     if (INPUT->GetButtonDown(KEY_TYPE::KEY_1)) {
 		UpdateGun(PLAYER_GUN::DEFAULT);
 	}
@@ -170,6 +192,85 @@ PlayerScript2::PlayerScript2()
     , m_CurrentState(PLAYER_STATE::IDLE)
     , m_Velocity(0.0f)
 {
+}
+
+void PlayerScript2::UpdateGun(PLAYER_GUN gun, int id)
+{
+	shared_ptr<Scene> scene = GET_SINGLE(SceneManager)->GetActiveScene();
+
+	if (m_Gun != gun) {
+		switch (m_Gun) {
+		case PLAYER_GUN::DEFAULT:
+			scene->RemoveGameObject(scene->GetGameObjectByName(L"Hamster" + to_wstring(id) + L"_DefaultGun"));
+			break;
+
+		case PLAYER_GUN::LASER:
+			scene->RemoveGameObject(scene->GetGameObjectByName(L"Hamster" + to_wstring(id) + L"_LaserGun"));
+			break;
+
+		case PLAYER_GUN::MAGNETIC:
+			scene->RemoveGameObject(scene->GetGameObjectByName(L"Hamster" + to_wstring(id) + L"_MagneticGun"));
+			break;
+
+		default:
+			break;
+		}
+
+		switch (gun) {
+		case PLAYER_GUN::DEFAULT: {
+			shared_ptr<MeshData> gunMeshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 01.fbx");
+			vector<shared_ptr<GameObject>> gunObjects = gunMeshData->Instantiate();
+			for (auto& object : gunObjects) {
+				object->SetName(L"Hamster" + to_wstring(id) + L"_DefaultGun");
+				object->SetCheckFrustum(false);
+				object->SetStatic(false);
+				object->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+				object->GetTransform()->SetLocalScale(Vec3(0.55f, 0.55f, 0.55f));
+				object->GetTransform()->SetLocalRotation(Vec3(XMConvertToRadians(180.f), XMConvertToRadians(-20.f), XMConvertToRadians(90.f)));
+				object->AttachToBone(scene->GetGameObjectByName(L"Hamster" + to_wstring(id)), L"mixamorig:RightHand");
+
+				scene->AddGameObject(object);
+			}
+		}
+								break;
+
+		case PLAYER_GUN::LASER: {
+			shared_ptr<MeshData> gunMeshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 02.fbx");
+			vector<shared_ptr<GameObject>> gunObjects = gunMeshData->Instantiate();
+			for (auto& object : gunObjects) {
+				object->SetName(L"Hamster" + to_wstring(id) + L"_LaserGun");
+				object->SetCheckFrustum(false);
+				object->SetStatic(false);
+				object->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+				object->GetTransform()->SetLocalScale(Vec3(0.55f, 0.55f, 0.55f));
+				object->GetTransform()->SetLocalRotation(Vec3(XMConvertToRadians(180.f), XMConvertToRadians(-20.f), XMConvertToRadians(90.f)));
+				object->AttachToBone(scene->GetGameObjectByName(L"Hamster" + to_wstring(id)), L"mixamorig:RightHand");
+
+				scene->AddGameObject(object);
+			}
+		}
+							  break;
+
+		case PLAYER_GUN::MAGNETIC: {
+			shared_ptr<MeshData> gunMeshData = GET_SINGLE(Resources)->LoadFBX(L"..\\Resources\\FBX\\Gun 07.fbx");
+			vector<shared_ptr<GameObject>> gunObjects = gunMeshData->Instantiate();
+			for (auto& object : gunObjects) {
+				object->SetName(L"Hamster" + to_wstring(id) + L"_MagneticGun");
+				object->SetCheckFrustum(false);
+				object->SetStatic(false);
+				object->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+				object->GetTransform()->SetLocalScale(Vec3(0.55f, 0.55f, 0.55f));
+				object->GetTransform()->SetLocalRotation(Vec3(XMConvertToRadians(180.f), XMConvertToRadians(-20.f), XMConvertToRadians(90.f)));
+				object->AttachToBone(scene->GetGameObjectByName(L"Hamster" + to_wstring(id)), L"mixamorig:RightHand");
+
+				scene->AddGameObject(object);
+			}
+		}
+								 break;
+		}
+
+        m_Gun = gun;
+	}
 }
 
 void PlayerScript2::Update()

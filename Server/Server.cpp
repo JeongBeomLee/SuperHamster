@@ -27,6 +27,15 @@ PxControllerManager*	pxControllerManager = nullptr;
 PxPvd*					pxPvd				= nullptr;	// 디버그용
 PxPvdSceneClient*		pxPvdScene			= nullptr;	// 디버그용
 
+const float CAMERA_ROTATION_X = XMConvertToRadians(45.0f);
+const float CAMERA_ROTATION_Y = XMConvertToRadians(-35.0f);
+
+volatile bool playerReadyStatus[MAX_USER] = { false, false };
+volatile bool allPlayersReady = false;
+int currentStage = 1;
+
+PxRigidStatic* pxTriangleMeshActor = nullptr;
+
 class SESSION;
 void error_display(const char* msg, int err_no);
 int  getNewClientId();
@@ -48,6 +57,9 @@ void ApplyMovementAndGravity(PxController* controller, const SESSION& player, Px
 void UpdatePlayerPosition(PxController* controller, SESSION& player);
 void SendMovementUpdate(int clientID);
 void updateBullets(float deltaTime);
+void LoadNextStage();
+void setupStage(int stageNumber);
+void resetPlayerPosition(int stageNumber);
 
 enum CLIENT_STATE { ST_FREE, ST_INGAME };
 enum PLAYER_STATE
@@ -85,9 +97,6 @@ enum class PLAYER_GUN {
 
 	END
 };
-
-const float CAMERA_ROTATION_X = XMConvertToRadians(45.0f);
-const float CAMERA_ROTATION_Y = XMConvertToRadians(-35.0f);
 
 class Timer
 {
@@ -228,7 +237,6 @@ public:
 	PxVec3			lastMoveDirection;
 	//int				last_move_time;
 };
-
 
 class Bullet
 {
@@ -537,8 +545,7 @@ void process_packet(int clientID, char* packet)
 		}
 			break;
 
-		case CS_SHOOT:
-		{
+		case CS_SHOOT: {
 			CS_SHOOT_PACKET* p = reinterpret_cast<CS_SHOOT_PACKET*>(packet);
 			// 플레이어의 컨트롤러 가져오기
 			PxController* playerController = pxControllerManager->getController(clientID);
@@ -572,6 +579,60 @@ void process_packet(int clientID, char* packet)
 			}
 
 			bullets.push_back(std::move(newBullet));
+			break;
+		}
+
+		case CS_READY: {
+			CS_READY_PACKET* p = reinterpret_cast<CS_READY_PACKET*>(packet);
+			playerReadyStatus[clientID] = true;
+
+			// 모든 플레이어가 준비되었는지 확인
+			allPlayersReady = true;
+			for (int i = 0; i < MAX_USER; ++i) {
+				if (players[i].state == ST_INGAME && !playerReadyStatus[i]) {
+					allPlayersReady = false;
+					break;
+				}
+			}
+
+			// 모든 플레이어가 준비되었다면 다음 스테이지로 이동 신호 전송
+			if (allPlayersReady) {
+				SC_NEXT_STAGE_PACKET nextStagePacket;
+				nextStagePacket.size = sizeof(SC_NEXT_STAGE_PACKET);
+				nextStagePacket.type = SC_NEXT_STAGE;
+
+				for (auto& pl : players) {
+					if (pl.state == ST_INGAME) {
+						pl.doSend(&nextStagePacket);
+					}
+				}
+
+				// 준비 상태 초기화
+				for (int i = 0; i < MAX_USER; ++i) {
+					playerReadyStatus[i] = false;
+				}
+				allPlayersReady = false;
+
+				pxTriangleMeshActor->release();
+				LoadNextStage();
+			}
+			break;
+		}
+
+		case CS_CHANGE_GUN: {
+			CS_CHANGE_GUN_PACKET* p = reinterpret_cast<CS_CHANGE_GUN_PACKET*>(packet);
+
+			// 다른 모든 플레이어에게 총 변경 정보 전달
+			for (auto& pl : players) {
+				if (pl.state != ST_INGAME || pl.id == clientID) continue;
+
+				SC_CHANGE_GUN_PACKET changeGunPacket;
+				changeGunPacket.size = sizeof(SC_CHANGE_GUN_PACKET);
+				changeGunPacket.type = SC_CHANGE_GUN;
+				changeGunPacket.id = clientID;
+				changeGunPacket.gunType = p->gunType;
+				pl.doSend(&changeGunPacket);
+			}
 			break;
 		}
 	}
@@ -701,15 +762,15 @@ void LoadMap(const std::wstring& _strFilePath)
 		PxTriangleMesh* triangleMesh = pxPhysics->createTriangleMesh(readBuffer);
 
 		PxTriangleMeshGeometry triangleMeshGeometry(triangleMesh, PxMeshScale(PxVec3(1, 1, 1)));
-		PxRigidStatic* triangleMeshActor = pxPhysics->createRigidStatic(PxTransform(PxVec3(0, 0, 0)));
+		pxTriangleMeshActor = pxPhysics->createRigidStatic(PxTransform(PxVec3(0, 0, 0)));
 		PxShape* triangleMeshShape = pxPhysics->createShape(triangleMeshGeometry, *pxDefaultMaterial);
 
 		// x축 기준 -90도 회전
 		PxQuat quat(-XM_PIDIV2, PxVec3(1, 0, 0));
-		triangleMeshActor->setGlobalPose(PxTransform(PxVec3(0, 0, 0), quat));
+		pxTriangleMeshActor->setGlobalPose(PxTransform(PxVec3(0, 0, 0), quat));
 
-		triangleMeshActor->attachShape(*triangleMeshShape);
-		pxDefaultScene->addActor(*triangleMeshActor);
+		pxTriangleMeshActor->attachShape(*triangleMeshShape);
+		pxDefaultScene->addActor(*pxTriangleMeshActor);
 
 		triangleMeshShape->release();
 
@@ -1023,4 +1084,76 @@ void updateBullets(float deltaTime)
 			}
 			return false;
 		}), bullets.end());
+}
+
+void LoadNextStage()
+{
+	switch (currentStage) {
+	case 0:
+		break;
+	case 1:
+		++currentStage;
+		LoadMap(L"Stage2.meshdata");
+		break;
+	case 2:
+		++currentStage;
+		LoadMap(L"Stage4.meshdata");
+		break;
+	case 3:
+		++currentStage;
+		LoadMap(L"Stage5.meshdata");
+		break;
+	}
+
+	setupStage(currentStage);
+	resetPlayerPosition(currentStage);
+}
+
+void setupStage(int stageNumber)
+{
+	for (int i = 0; i < MAX_USER; ++i) {
+		if (players[i].state != ST_INGAME) continue;
+
+		players[i].send_LoginInfoPacket(i);
+		for (auto& other : players) {
+			if (ST_INGAME != other.state) continue;
+			if (other.id == i) continue;
+			other.send_AddPlayerPacket(i);
+			players[i].send_AddPlayerPacket(other.id);
+		}
+	}
+}
+
+void resetPlayerPosition(int stageNumber)
+{
+	switch (currentStage) {
+	case 0:
+		break;
+	case 1:
+		break;
+	case 2:
+		for (int i = 0; i < MAX_USER; ++i) {
+			if (players[i].state != ST_INGAME) continue;
+			players[i].pos = Vec3(-786, 256.f, -3057);
+			PxController* controller = pxControllerManager->getController(i);
+			if (controller) {
+				controller->setPosition(PxExtendedVec3(players[i].pos.x, players[i].pos.y, players[i].pos.z));
+			}
+		}
+		
+		break;
+	case 3:
+		for (int i = 0; i < MAX_USER; ++i) {
+			if (players[i].state != ST_INGAME) continue;
+			players[i].pos = Vec3(3715, 256.f, -117);
+			PxController* controller = pxControllerManager->getController(i);
+			if (controller) {
+				controller->setPosition(PxExtendedVec3(players[i].pos.x, players[i].pos.y, players[i].pos.z));
+			}
+		}
+		break;
+
+	case 4:
+		break;
+	}
 }
