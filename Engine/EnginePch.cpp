@@ -249,7 +249,7 @@ void ProcessPacket(char* ptr)
         bullet->SetCheckFrustum(false);
         bullet->SetStatic(false);
         bullet->AddComponent(make_shared<Transform>());
-        bullet->AddComponent(make_shared<ParticleSystem>());
+        bullet->AddComponent(make_shared<BulletParticle>());
         bullet->GetTransform()->SetLocalPosition(packet->position);
         bullet->GetTransform()->SetLocalScale(Vec3(100.f, 100.f, 100.f));
 
